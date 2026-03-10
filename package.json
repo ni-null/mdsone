@@ -30,6 +30,8 @@
     "dev": "tsx src/cli/main.ts",
     "start": "tsx src/cli/main.ts",
     "typecheck": "tsc --noEmit",
+    "docs:build": "npm run build && node scripts/build-docs.mjs",
+    "docs:i18n": "npx mdsone --source ./docs --output ./docs-dist/index.html --template normal --i18n-mode true --default-locale zh-TW --site-title \"MDSone Documentation\"",
     "prepublishOnly": "npm run build"
   },
   "engines": {
