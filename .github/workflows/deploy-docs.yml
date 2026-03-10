@@ -37,23 +37,30 @@ jobs:
         run: npm run build
 
       - name: Create output directory
-        run: mkdir -p dist/docs
+        run: mkdir -p _site
 
       - name: Build multi-language documentation
         run: |
           npx mdsone \
             --source ./docs \
-            --output ./dist/docs/index.html \
+            --output ./_site/index.html \
             --template normal \
             --i18n-mode true \
             --default-locale zh-TW \
             --site-title "MDSone Documentation" \
             --theme-mode light
 
+      - name: Check generated files
+        run: |
+          echo "Generated files:"
+          ls -lh _site/
+          echo "Directory structure:"
+          find _site -type f
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'dist/docs'
+          path: './_site'
 
   deploy:
     name: Deploy to GitHub Pages
