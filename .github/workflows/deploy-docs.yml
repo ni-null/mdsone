@@ -3,8 +3,6 @@ name: Build and Deploy Docs to GitHub Pages
 on:
   push:
     branches: ['main']
-  pull_request:
-    branches: ['main']
   workflow_dispatch:
 
 permissions:
@@ -18,7 +16,6 @@ concurrency:
 
 jobs:
   build:
-    name: Build Documentation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,23 +47,19 @@ jobs:
             --site-title "MDSone Documentation" \
             --theme-mode light
 
-      - name: Check generated files
-        run: |
-          echo "Generated files:"
-          ls -lh _site/
-          echo "Directory structure:"
-          find _site -type f
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './_site'
+          path: '_site'
 
   deploy:
     name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v3
