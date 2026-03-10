@@ -6,30 +6,8 @@
 # Install globally
 npm install -g mdsone
 
-# Or run directly via npx (no installation required)
-npx mdsone --help
-
-# Local development
-npm install
-npm run build
-
-# Install sharp for image resize/compress features
-npm install sharp
-```
-
-## Running
-
-```bash
-# Run via npx (requires global installation)
+# Run via npx (requires global install)
 npx mdsone [options]
-
-# Local development (runs TypeScript directly, no build needed)
-npm run dev
-# or
-npm start
-
-# During development, you can also run with npx tsx directly
-npx tsx src/cli/main.ts [options]
 ```
 
 ## Usage Examples
@@ -38,35 +16,35 @@ npx tsx src/cli/main.ts [options]
 # No arguments: reads config.toml directly (recommended for local development)
 npx mdsone
 
-# **Process a single Markdown file**
+# Set a single Markdown file
 npx mdsone --source ./README.md --output index.html
 
 # Specify source directory and output
 npx mdsone --source ./docs --output ./output.html
 
 # Specify template and locale
-npx mdsone --source ./docs --output ./output.html --template minimal --locale en
+npx mdsone --source ./docs --output ./output.html --template minimal --locale zh-TW
 
 # Specify output folder and filename separately
 npx mdsone --source ./docs --output-dir ./dist --output-filename guide.html
 
-# **Embed images as base64 (supports both local and remote)**
+# Embed images as base64 (supports both local and remote)
 npx mdsone --source ./docs --output ./output.html --img-to-base64 true
 
-# Embed images with max width (requires sharp)
+# Embed images with a maximum width
 npx mdsone --source ./docs --output ./output.html --img-to-base64 true --img-max-width 400
 
-# Embed images with compression quality (requires sharp)
+# Embed images with compression quality
 npx mdsone --source ./docs --output ./output.html --img-to-base64 true --img-compress 80
 ```
 
 ## Three Execution Modes
 
-| Mode                              | Description                                                                   |
-| --------------------------------- | ----------------------------------------------------------------------------- |
-| **Mode 1: Interactive Picker**    | When no required arguments are provided, a folder picker dialog opens (Windows / macOS) |
-| **Mode 2: config.toml**           | Fill in `[paths]` and other settings in `config.toml`, then run directly      |
-| **Mode 3: CLI Override**          | Override via CLI arguments or environment variables — highest priority        |
+| Mode | Description |
+| ---- | ----------- |
+| **Mode 1: Interactive Picker** | When no required arguments are provided, a folder selection window pops up automatically (Windows / macOS) |
+| **Mode 2: config.toml** | Fill in `[paths]` and other settings in `config.toml`, then run directly |
+| **Mode 3: CLI Override** | Override via CLI arguments or environment variables — highest priority |
 
 ## config.toml Example
 
@@ -95,34 +73,34 @@ theme_mode = "dark"
 
 # ── Internationalisation ──────────────────────────────────────────────────────
 [i18n]
-locale         = "en"
+locale         = "zh-TW"
 mode           = false
-default_locale = "en"
+default_locale = "zh-TW"
 ```
 
-> **Important**: `config.toml` should not be committed to git (already in `.gitignore`). Machine-specific paths should be written to this file.
+> **Important**: `config.toml` should not be committed to git (already listed in `.gitignore`). Machine-specific paths should be written to this file.
 
-## Multi-language Mode
+## Multilingual Mode
 
-Add `mode = true` under `[i18n]` in `config.toml` and place Markdown files in `[locale]` subdirectories:
+Set `mode = true` under `[i18n]` in `config.toml`, and organize your Markdown files into `[locale]` subdirectories:
 
 ```toml
 [i18n]
 mode = true
-default_locale = "en"
+default_locale = "zh-TW"
 ```
 
 ```text
 docs/
-├── [en]/
+├── [zh-TW]/
 │   ├── 01_intro.md
 │   └── 02_usage.md
-└── [zh-TW]/
+└── [en]/
     ├── 01_intro.md
     └── 02_usage.md
 ```
 
-The build produces a single HTML file with a built-in language switcher dropdown, and remembers the user's language preference via `localStorage`.
+Running the command generates a single HTML file with a built-in language switcher dropdown, and remembers the user's language preference via `localStorage`.
 
 ```bash
 npx mdsone --source ./docs
@@ -133,5 +111,3 @@ npx mdsone --source ./docs
 ```text
 CLI arguments > Environment variables > config.toml > Default values
 ```
-
-> **Note**: In CI environments (e.g. GitHub Actions) where `config.toml` is not defined, environment variables take over all configuration; `config.toml` is the most convenient option for local development.
