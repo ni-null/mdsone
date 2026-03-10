@@ -8,31 +8,46 @@ import type { CliArgs } from "../core/types.js";
 
 const EXAMPLES = `
 EXAMPLES:
-  npx mdsone --template normal --locale zh-TW
-  npx mdsone --source ./README.md --output index.html
+  # Basic: Convert single file
+  npx mdsone --source README.md --output index.html
+
+  # Convert entire directory
   npx mdsone --source ./docs --output build/docs.html
-  npx mdsone --template minimal --locale en --output output.html --source ./markdown
+
+  # With template and locale
+  npx mdsone --template minimal --locale zh-TW --source ./markdown
+
+  # Customize site title and theme
+  npx mdsone --source ./docs --output docs.html --site-title "My Docs" --theme-mode dark
+
+  # Enable multi-language mode
+  npx mdsone --source ./docs --i18n-mode true --default-locale zh-TW
+
+  # Image optimization
+  npx mdsone --source README.md --output index.html --img-to-base64 true --img-max-width 800 --img-compress 85
+
+  # Output control
   npx mdsone --source ./docs --output-dir ./dist --output-filename guide.html
-  npx mdsone --source ./docs --i18n-mode true
-  npx mdsone --source ./README.md --output index.html --img-to-base64 true
-  npx mdsone --source ./README.md --output index.html --img-to-base64 true --img-max-width 800 --img-compress 85
+
+CONFIGURATION PRIORITY:
+  CLI arguments > Environment variables > config.toml > Default values
 
 ENVIRONMENT VARIABLES:
-  MARKDOWN_SOURCE_DIR    Markdown source directory     (default: ./markdown)
-  OUTPUT_FILE            Output file path              (default: system_guide.html)
-  OUTPUT_DIR             Output directory              (default: empty)
-  OUTPUT_FILENAME        Output filename               (default: empty)
-  TEMPLATES_DIR          Templates directory           (default: templates)
-  DEFAULT_TEMPLATE       Default template name         (default: normal)
-  MINIFY_HTML            Minify HTML output            (default: true)
-  SITE_TITLE             Documentation site title      (default: Documentation)
-  THEME_MODE             Theme mode: light | dark      (default: light)
-  LOCALE                 UI locale code                (default: en)
-  I18N_MODE              Multi-language mode           (default: false)
-  DEFAULT_LOCALE         Default locale in i18n mode   (default: empty)
-  LOCALES_DIR            Locales directory             (default: locales)
-  TEMPLATE_CONFIG_FILE   Template config filename      (default: template.config.json)
-  BUILD_DATE             Build date for footer         (auto-generated if not set)
+  MARKDOWN_SOURCE_DIR    (default: ./markdown)              → --source
+  OUTPUT_FILE            (default: system_guide.html)       → --output
+  OUTPUT_DIR             (default: empty)                   → --output-dir
+  OUTPUT_FILENAME        (default: empty)                   → --output-filename
+  DEFAULT_TEMPLATE       (default: normal)                  → --template
+  SITE_TITLE             (default: Documentation)           → --site-title
+  THEME_MODE             (default: light)                   → --theme-mode
+  LOCALE                 (default: en)                      → --locale
+  I18N_MODE              (default: false)                   → --i18n-mode
+  DEFAULT_LOCALE         (default: empty)                   → --default-locale
+  MINIFY_HTML            (default: true)                    → --minify-html
+  TEMPLATES_DIR          (default: templates)               → --templates-dir
+  LOCALES_DIR            (default: locales)                 → --locales-dir
+  TEMPLATE_CONFIG_FILE   (default: template.config.json)
+  BUILD_DATE             (auto-generated if not set)
 `;
 
 /**
@@ -45,43 +60,68 @@ export function parseArgs(argv?: string[]): CliArgs {
   program
     .name("mdsone")
     .description("mdsone — Convert Markdown to self-contained HTML")
+    .version("0.1.5", "-v, --version", "Display version")
     .addHelpText("after", EXAMPLES)
-    .option("--template <NAME>",          "Template name to use (e.g., normal, minimal)")
-    .option("--locale <CODE>",            "Locale/language code (e.g., en, zh-TW)")
-    .option("--output <PATH>",            "Output HTML file path")
-  .option("--source <PATH>",            "Markdown source (file or directory)")
-    .option("--output-dir <DIR>",         "Output directory")
-    .option("--output-filename <NAME>",   "Output filename (e.g., docs.html)")
-    .option("--i18n-mode <true|false>",        "Enable/disable multi-language mode")
-    .option("--img-to-base64 <true|false>",     "Embed images as base64 (local + remote) (default: false)")
-    .option("--img-max-width <pixels>",         "Resize images to max width in pixels (requires sharp)")
-    .option("--img-compress <1-100>",           "Compression quality 1-100 (requires sharp)")
+    // Paths
+    .option("--source <PATH>",             "Markdown source (file or directory)")
+    .option("--output <PATH>",             "Output HTML file path")
+    .option("--output-dir <DIR>",          "Output directory")
+    .option("--output-filename <NAME>",    "Output filename (e.g., docs.html)")
+    .option("--templates-dir <DIR>",       "Templates directory (default: templates)")
+    .option("--locales-dir <DIR>",         "Locales directory (default: locales)")
+    // Templates & Styling
+    .option("--template <NAME>",           "Template name (normal, minimal; default: normal)")
+    .option("--site-title <TEXT>",         "Documentation site title (default: Documentation)")
+    .option("--theme-mode <light|dark>",   "Theme mode: light or dark (default: light)")
+    .option("--minify-html <true|false>",  "Minify HTML output (default: true)")
+    // Internationalization
+    .option("--locale <CODE>",             "UI locale code (e.g., en, zh-TW; default: en)")
+    .option("--i18n-mode <true|false>",    "Enable multi-language mode (default: false)")
+    .option("--default-locale <CODE>",     "Default locale in i18n mode")
+    // Image Processing
+    .option("--img-to-base64 <true|false>", "Embed images as base64 (default: false)")
+    .option("--img-max-width <pixels>",     "Max image width in pixels (requires 'sharp' package)")
+    .option("--img-compress <1-100>",       "Image compression quality 1-100 (requires 'sharp' package)")
     .allowUnknownOption(false);
 
   program.parse(argv ?? process.argv);
   const opts = program.opts<{
-    template?:        string;
-    locale?:          string;
-    output?:          string;
-    source?:          string;
-    outputDir?:       string;
-    outputFilename?:  string;
-    i18nMode?:        string;
-    imgToBase64?:     string;
-    imgMaxWidth?:     string;
-    imgCompress?:     string;
+    template?:         string;
+    locale?:           string;
+    output?:           string;
+    source?:           string;
+    outputDir?:        string;
+    outputFilename?:   string;
+    siteTitle?:        string;
+    themeMode?:        string;
+    i18nMode?:         string;
+    defaultLocale?:    string;
+    minifyHtml?:       string;
+    templatesDir?:     string;
+    localesDir?:       string;
+    imgToBase64?:      string;
+    imgMaxWidth?:      string;
+    imgCompress?:      string;
+    version?:          boolean;
   }>();
 
   return {
-    template:        opts.template,
-    locale:          opts.locale,
-    output:          opts.output,
-    source:          opts.source,
-    outputDir:       opts.outputDir,
-    outputFilename:  opts.outputFilename,
-    i18nMode:        opts.i18nMode,
-    imgToBase64:     opts.imgToBase64,
-    imgMaxWidth:     opts.imgMaxWidth,
-    imgCompress:     opts.imgCompress,
+    template:          opts.template,
+    locale:            opts.locale,
+    output:            opts.output,
+    source:            opts.source,
+    outputDir:         opts.outputDir,
+    outputFilename:    opts.outputFilename,
+    siteTitle:         opts.siteTitle,
+    themeMode:         opts.themeMode,
+    i18nMode:          opts.i18nMode,
+    defaultLocale:     opts.defaultLocale,
+    minifyHtml:        opts.minifyHtml,
+    templatesDir:      opts.templatesDir,
+    localesDir:        opts.localesDir,
+    imgToBase64:       opts.imgToBase64,
+    imgMaxWidth:       opts.imgMaxWidth,
+    imgCompress:       opts.imgCompress,
+    version:           opts.version,
   };
 }

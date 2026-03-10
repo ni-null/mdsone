@@ -39,10 +39,17 @@ export interface CliArgs {
   source?: string;
   outputDir?: string;
   outputFilename?: string;
+  siteTitle?: string;
+  themeMode?: string;
   i18nMode?: string;
+  defaultLocale?: string;
+  minifyHtml?: string;
+  templatesDir?: string;
+  localesDir?: string;
   imgToBase64?: string;
   imgMaxWidth?: string;
   imgCompress?: string;
+  version?: boolean;
 }
 
 /** locale JSON 檔案的結構（en.json / zh-TW.json） */

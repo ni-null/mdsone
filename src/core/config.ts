@@ -61,15 +61,27 @@ function filterDefined<T extends object>(obj: Partial<T>): Partial<T> {
  */
 export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   const out: Partial<Config> = {};
-  if (args.template)       out.default_template     = args.template;
-  if (args.locale)         out.locale               = args.locale;
-  if (args.output)         out.output_file          = args.output;
+  // Paths
   if (args.source)         out.markdown_source_dir  = args.source;
+  if (args.output)         out.output_file          = args.output;
   if (args.outputDir)      out.output_dir           = args.outputDir;
   if (args.outputFilename) out.output_filename      = args.outputFilename;
+  if (args.templatesDir)   out.templates_dir        = args.templatesDir;
+  if (args.localesDir)     out.locales_dir          = args.localesDir;
+  // Templates & Styling
+  if (args.template)       out.default_template     = args.template;
+  if (args.siteTitle)      out.site_title           = args.siteTitle;
+  if (args.themeMode)      out.theme_mode           = args.themeMode;
+  if (args.minifyHtml !== undefined) {
+    out.minify_html = ["true", "1", "yes", "on"].includes(args.minifyHtml!.toLowerCase());
+  }
+  // Internationalization
+  if (args.locale)         out.locale               = args.locale;
   if (args.i18nMode !== undefined) {
     out.i18n_mode = ["true", "1", "yes", "on"].includes(args.i18nMode!.toLowerCase());
   }
+  if (args.defaultLocale)  out.default_locale       = args.defaultLocale;
+  // Image Processing
   if (args.imgToBase64 !== undefined) {
     out.img_to_base64 = ["true", "1", "yes", "on"].includes(args.imgToBase64!.toLowerCase());
   }
