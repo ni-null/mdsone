@@ -32,9 +32,10 @@ export const DEFAULT_CONFIG: Config = {
   img_max_width:  0,
   img_compress:   0,
   // code features
-  code_highlight:       true,
-  code_copy:            true,
-  code_highlight_theme: "atom-one-dark",
+  code_highlight:             true,
+  code_copy:                  true,
+  code_highlight_theme:       "atom-one-dark",
+  code_highlight_theme_light: "atom-one-light",
 };
 
 /**
@@ -104,7 +105,8 @@ export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   if (args.codeCopy !== undefined) {
     out.code_copy = !["disable", "false", "0", "off"].includes(args.codeCopy.toLowerCase());
   }
-  if (args.codeHighlightTheme) out.code_highlight_theme = args.codeHighlightTheme;
+  if (args.codeHighlightTheme)      out.code_highlight_theme       = args.codeHighlightTheme;
+  if (args.codeHighlightThemeLight) out.code_highlight_theme_light = args.codeHighlightThemeLight;
   return out;
 }
 

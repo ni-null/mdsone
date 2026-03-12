@@ -6,8 +6,16 @@
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import type { Config, I18nFile, TemplateData } from "../../core/types.js";
 import { LOCALE_DIR_PATTERN } from "../../core/markdown.js";
+
+/** highlight.js styles/ 目錄（從 npm 套件解析，不依賴 lib/ 目錄） */
+function resolveHljsStylesDir(): string {
+  const require = createRequire(import.meta.url);
+  const pkgJson = require.resolve("highlight.js/package.json");
+  return path.join(path.dirname(pkgJson), "styles");
+}
 
 /** 讀取 UTF-8 文字檔（自動去除 BOM） */
 export async function readTextFile(filePath: string): Promise<string> {
@@ -367,51 +375,37 @@ export async function loadLibFiles(
 
   // ── syntax highlight ─────────────────────────────────
   if (config.code_highlight) {
-    const hlDir = path.join(libDir, "highlight");
+    const stylesDir = resolveHljsStylesDir();
 
-    // JS
-    const hlJs = await tryRead(path.join(hlDir, "highlight.min.js"), "highlight.min.js");
+    // CSS themes（從 npm highlight.js 套件讀取，高亮已在 build 時完成）
+    const theme      = config.code_highlight_theme       || "atom-one-dark";
+    const themeLight = config.code_highlight_theme_light || "atom-one-light";
+    const darkFile  = `${theme}.min.css`;
+    const lightFile = `${themeLight}.min.css`;
 
-    // CSS themes
-    const theme = config.code_highlight_theme || "atom-one-dark";
-    const darkFile = `${theme}.min.css`;
-    const lightFile = "atom-one-light.min.css";
-
-    const darkCss = await tryRead(path.join(hlDir, "css", darkFile), darkFile);
-    const lightCss = await tryRead(path.join(hlDir, "css", lightFile), lightFile);
+    const darkCss  = await tryRead(path.join(stylesDir, darkFile),  darkFile);
+    const lightCss = await tryRead(path.join(stylesDir, lightFile), lightFile);
 
     // Inject dual-theme <style> tags (一個啟用、一個 disabled)
     if (darkCss) cssParts.push(`<style id="hljs-theme-dark">${darkCss}</style>`);
     if (lightCss) cssParts.push(`<style id="hljs-theme-light" disabled>${lightCss}</style>`);
 
-    // Inject highlight.js + helpers as a single <script>
-    if (hlJs) {
-      // hljs 單獨一個 <script>，避免字串拼接破壞反斜線
-      jsParts.push(`<script>${hlJs}</script>`);
-
-      // helper 函式另外一個 <script>
-      jsParts.push(
-        `<script>\n` +
-        `try {\n` +
-        `window.__mdsone_highlight = function(container) {\n` +
-        `  if (typeof hljs === 'undefined') return;\n` +
-        `  var blocks = (container || document).querySelectorAll('pre code');\n` +
-        `  blocks.forEach(function(b) { if (!b.dataset.highlighted) hljs.highlightElement(b); });\n` +
-        `};\n` +
-        `window.__mdsone_hljs_theme = function(isDark) {\n` +
-        `  var dark  = document.getElementById('hljs-theme-dark');\n` +
-        `  var light = document.getElementById('hljs-theme-light');\n` +
-        `  if (dark)  dark.disabled  = !isDark;\n` +
-        `  if (light) light.disabled =  isDark;\n` +
-        `};\n` +
-        `} catch(e) {\n` +
-        `  console.warn('[mdsone] Failed to load highlight.js:', e.message);\n` +
-        `  window.__mdsone_highlight = function() {};\n` +
-        `  window.__mdsone_hljs_theme = function() {};\n` +
-        `}\n` +
-        `</script>`
-      );
-    }
+    // 注入主題切換 helper（不再需要 highlight.js runtime，高亮已靜態完成）
+    jsParts.push(
+      `<script>\n` +
+      `try {\n` +
+      `window.__mdsone_hljs_theme = function(isDark) {\n` +
+      `  var dark  = document.getElementById('hljs-theme-dark');\n` +
+      `  var light = document.getElementById('hljs-theme-light');\n` +
+      `  if (dark)  dark.disabled  = !isDark;\n` +
+      `  if (light) light.disabled =  isDark;\n` +
+      `};\n` +
+      `} catch(e) {\n` +
+      `  console.warn('[mdsone] hljs theme switch failed:', e.message);\n` +
+      `  window.__mdsone_hljs_theme = function() {};\n` +
+      `}\n` +
+      `</script>`
+    );
   }
 
   // ── copy button ──────────────────────────────────────

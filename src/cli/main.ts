@@ -166,7 +166,7 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      let html = markdownToHtml(fileContent, config.markdown_extensions);
+      let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight);
       if (config.img_to_base64) {
         const baseDir = path.dirname(path.resolve(config.markdown_source_dir));
         html = await embedImagesInHtml(html, baseDir, {
@@ -220,7 +220,7 @@ async function main(): Promise<void> {
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions);
+            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
             if (config.img_to_base64) {
               html = await embedImagesInHtml(html, dir, {
                 maxWidth: config.img_max_width || undefined,
@@ -284,7 +284,7 @@ async function main(): Promise<void> {
       try {
         const content = await readTextFile(filepath);
         if (content.trim()) {
-          let html = markdownToHtml(content, config.markdown_extensions);
+          let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
           if (config.img_to_base64) {
             html = await embedImagesInHtml(html, config.markdown_source_dir, {
               maxWidth: config.img_max_width || undefined,

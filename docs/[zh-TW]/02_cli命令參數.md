@@ -16,7 +16,8 @@
 | `--img-compress QUALITY` | 圖片壓縮品質 1-100（需要 sharp） | `--img-compress 80` |
 | `--code-highlight enable\|disable` | 語法高亮（預設 enable） | `--code-highlight disable` |
 | `--code-copy enable\|disable` | 程式碼複製按鈕（預設 enable） | `--code-copy disable` |
-| `--code-highlight-theme NAME` | highlight.js 主題名稱 | `--code-highlight-theme atom-one-light` |
+| `--code-highlight-theme NAME` | highlight.js 深色主題名稱 | `--code-highlight-theme github-dark` |
+| `--code-highlight-theme-light NAME` | highlight.js 淺色主題名稱 | `--code-highlight-theme-light github` |
 
 > `--output` 的優先權高於 `--output-dir` + `--output-filename` 的組合。
 
@@ -101,7 +102,8 @@ npm start
 | 圖片壓縮品質 | `--img-compress` | `IMG_COMPRESS` | `[build] img_compress` |
 | 語法高亮 | `--code-highlight` | `CODE_HIGHLIGHT` | `[build] code_highlight` |
 | 複製按鈕 | `--code-copy` | `CODE_COPY` | `[build] code_copy` |
-| 高亮主題 | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[build] code_highlight_theme` |
+| 高亮深色主題 | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[build] code_highlight_theme` |
+| 高亮淺色主題 | `--code-highlight-theme-light` | `CODE_HIGHLIGHT_THEME_LIGHT` | `[build] code_highlight_theme_light` |
 
 ## 使用範例
 

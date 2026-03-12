@@ -7,6 +7,7 @@
 import MarkdownIt, { type Options as MarkdownItOptions } from "markdown-it";
 // @ts-ignore — markdown-it-attrs 沒有官方型別宣告
 import markdownItAttrs from "markdown-it-attrs";
+import hljs from "highlight.js";
 
 /** `[locale]` 目錄名稱的正則（例如 [en]、[zh-TW]） */
 export const LOCALE_DIR_PATTERN = /^\[(.+)\]$/;
@@ -52,11 +53,12 @@ export function addHeadingIds(html: string): string {
 /**
  * code block 內的 `{` `}` 轉為 HTML entity，
  * 防止與 template 佔位符衝突（對應 Python escape_braces_in_code）。
+ * 注意：regex 使用 `<code[^>]*>` 以匹配帶 class 的元素（server-side 高亮後才有 class）。
  */
 export function escapeCodeBlocks(html: string): string {
-  return html.replace(/<code>([\s\S]*?)<\/code>/g, (_match, inner: string) => {
+  return html.replace(/<code([^>]*)>([\s\S]*?)<\/code>/g, (_match, attrs: string, inner: string) => {
     const escaped = inner.replace(/\{/g, "&#123;").replace(/\}/g, "&#125;");
-    return `<code>${escaped}</code>`;
+    return `<code${attrs}>${escaped}</code>`;
   });
 }
 
@@ -99,21 +101,29 @@ function createMarkdownIt(extensions: string[]): MarkdownIt {
 /**
  * 將 Markdown 文字轉換為 HTML（對應 Python markdown_to_html()）。
  * 包含：heading id 注入、code block brace 轉義、code fence 語言屬性、table cell XSS 過濾。
+ * @param codeHighlight - true 時在後端直接套用 highlight.js，輸出帶 span 的靜態 HTML。
  */
-export function markdownToHtml(markdownText: string, extensions: string[]): string {
+export function markdownToHtml(markdownText: string, extensions: string[], codeHighlight?: boolean): string {
   const md = createMarkdownIt(extensions);
 
-  // 覆寫 fence renderer 以輸出 data-lang 屬性（對應 Python 的 pre data-lang 替換）
+  // 覆寫 fence renderer
   const defaultFence = md.renderer.rules.fence;
   md.renderer.rules.fence = (tokens, idx, options, env, self) => {
     const token = tokens[idx];
     const lang = token.info ? token.info.trim().split(/\s+/)[0] : "";
     if (lang) {
+      if (codeHighlight) {
+        // ── 後端高亮：直接呼叫 hljs，不需前端載入 JS ──
+        const highlighted = hljs.getLanguage(lang)
+          ? hljs.highlight(token.content, { language: lang, ignoreIllegals: true }).value
+          : md.utils.escapeHtml(token.content); // 不支援的語言退回純文字
+        return `<pre data-lang="${lang}"><code class="language-${lang}">${highlighted}</code></pre>\n`;
+      }
+      // ── 前端高亮模式：保留原有邏輯 ──
       token.info = "";  // 清除語言以使用預設渲染
       const rendered = defaultFence
         ? defaultFence(tokens, idx, options, env, self)
         : self.renderToken(tokens, idx, options);
-      // 將 <pre><code class="language-..."> 改為 <pre data-lang="..."><code>
       return rendered.replace(
         /^<pre><code[^>]*>/,
         `<pre data-lang="${lang}"><code class="language-${lang}">`,

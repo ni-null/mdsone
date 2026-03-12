@@ -110,7 +110,8 @@ export function parseArgs(argv?: string[]): CliArgs {
     // Code features
     .option("--code-highlight <enable|disable>", "Syntax highlighting via highlight.js (default: enable)")
     .option("--code-copy <enable|disable>",      "Copy button on code blocks (default: enable)")
-    .option("--code-highlight-theme <NAME>",     "highlight.js theme name (default: atom-one-dark)")
+    .option("--code-highlight-theme <NAME>",       "highlight.js dark theme name (default: atom-one-dark)")
+    .option("--code-highlight-theme-light <NAME>", "highlight.js light theme name (default: atom-one-light)")
     .allowUnknownOption(false);
 
   program.parse(argv ?? process.argv);
@@ -131,10 +132,11 @@ export function parseArgs(argv?: string[]): CliArgs {
     imgToBase64?:      string;
     imgMaxWidth?:      string;
     imgCompress?:      string;
-    codeHighlight?:    string;
-    codeCopy?:         string;
-    codeHighlightTheme?: string;
-    version?:          boolean;
+    codeHighlight?:          string;
+    codeCopy?:               string;
+    codeHighlightTheme?:     string;
+    codeHighlightThemeLight?: string;
+    version?:                boolean;
   }>();
 
   return {
@@ -154,9 +156,10 @@ export function parseArgs(argv?: string[]): CliArgs {
     imgToBase64:       opts.imgToBase64,
     imgMaxWidth:       opts.imgMaxWidth,
     imgCompress:       opts.imgCompress,
-    codeHighlight:     opts.codeHighlight,
-    codeCopy:          opts.codeCopy,
-    codeHighlightTheme: opts.codeHighlightTheme,
-    version:           opts.version,
+    codeHighlight:          opts.codeHighlight,
+    codeCopy:               opts.codeCopy,
+    codeHighlightTheme:     opts.codeHighlightTheme,
+    codeHighlightThemeLight: opts.codeHighlightThemeLight,
+    version:                opts.version,
   };
 }
