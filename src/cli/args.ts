@@ -88,78 +88,78 @@ export function parseArgs(argv?: string[]): CliArgs {
     .version(VERSION, "-v, --version", "Display version")
     .addHelpText("after", EXAMPLES)
     // Paths
-    .option("--source <PATH>",             "Markdown source (file or directory)")
-    .option("--output <PATH>",             "Output HTML file path")
-    .option("--output-dir <DIR>",          "Output directory")
-    .option("--output-filename <NAME>",    "Output filename (e.g., docs.html)")
-    .option("--templates-dir <DIR>",       "Templates directory (default: templates)")
-    .option("--locales-dir <DIR>",         "Locales directory (default: locales)")
+    .option("--source <PATH>", "Markdown source (file or directory)")
+    .option("--output <PATH>", "Output HTML file path")
+    .option("--output-dir <DIR>", "Output directory")
+    .option("--output-filename <NAME>", "Output filename (e.g., docs.html)")
+    .option("--templates-dir <DIR>", "Templates directory (default: templates)")
+    .option("--locales-dir <DIR>", "Locales directory (default: locales)")
     // Templates & Styling
-    .option("--template <NAME>",           "Template name (normal, minimal; default: normal)")
-    .option("--site-title <TEXT>",         "Documentation site title (default: Documentation)")
-    .option("--theme-mode <light|dark>",   "Theme mode: light or dark (default: light)")
-    .option("--minify-html <true|false>",  "Minify HTML output (default: true)")
+    .option("--template <NAME>", "Template name (normal, minimal; default: normal)")
+    .option("--site-title <TEXT>", "Documentation site title (default: Documentation)")
+    .option("--theme-mode <light|dark>", "Theme mode: light or dark (default: light)")
+    .option("--minify-html <true|false>", "Minify HTML output (default: true)")
     // Internationalization
-    .option("--locale <CODE>",             "UI locale code (e.g., en, zh-TW; default: en)")
-    .option("--i18n-mode <true|false>",    "Enable multi-language mode (default: false)")
-    .option("--default-locale <CODE>",     "Default locale in i18n mode")
+    .option("--locale <CODE>", "UI locale code (e.g., en, zh-TW; default: en)")
+    .option("--i18n-mode <true|false>", "Enable multi-language mode (default: false)")
+    .option("--default-locale <CODE>", "Default locale in i18n mode")
     // Image Processing
     .option("--img-to-base64 <true|false>", "Embed images as base64 (default: false)")
-    .option("--img-max-width <pixels>",     "Max image width in pixels (requires 'sharp' package)")
-    .option("--img-compress <1-100>",       "Image compression quality 1-100 (requires 'sharp' package)")
+    .option("--img-max-width <pixels>", "Max image width in pixels (requires 'sharp' package)")
+    .option("--img-compress <1-100>", "Image compression quality 1-100 (requires 'sharp' package)")
     // Code features
     .option("--code-highlight <enable|disable>", "Syntax highlighting via highlight.js (default: enable)")
-    .option("--code-copy <enable|disable>",      "Copy button on code blocks (default: enable)")
-    .option("--code-highlight-theme <NAME>",       "highlight.js dark theme name (default: atom-one-dark)")
+    .option("--code-copy <enable|disable>", "Copy button on code blocks (default: enable)")
+    .option("--code-highlight-theme <NAME>", "highlight.js dark theme name (default: atom-one-dark)")
     .option("--code-highlight-theme-light <NAME>", "highlight.js light theme name (default: atom-one-light)")
     .allowUnknownOption(false);
 
   program.parse(argv ?? process.argv);
   const opts = program.opts<{
-    template?:         string;
-    locale?:           string;
-    output?:           string;
-    source?:           string;
-    outputDir?:        string;
-    outputFilename?:   string;
-    siteTitle?:        string;
-    themeMode?:        string;
-    i18nMode?:         string;
-    defaultLocale?:    string;
-    minifyHtml?:       string;
-    templatesDir?:     string;
-    localesDir?:       string;
-    imgToBase64?:      string;
-    imgMaxWidth?:      string;
-    imgCompress?:      string;
-    codeHighlight?:          string;
-    codeCopy?:               string;
-    codeHighlightTheme?:     string;
+    template?: string;
+    locale?: string;
+    output?: string;
+    source?: string;
+    outputDir?: string;
+    outputFilename?: string;
+    siteTitle?: string;
+    themeMode?: string;
+    i18nMode?: string;
+    defaultLocale?: string;
+    minifyHtml?: string;
+    templatesDir?: string;
+    localesDir?: string;
+    imgToBase64?: string;
+    imgMaxWidth?: string;
+    imgCompress?: string;
+    codeHighlight?: string;
+    codeCopy?: string;
+    codeHighlightTheme?: string;
     codeHighlightThemeLight?: string;
-    version?:                boolean;
+    version?: boolean;
   }>();
 
   return {
-    template:          opts.template,
-    locale:            opts.locale,
-    output:            opts.output,
-    source:            opts.source,
-    outputDir:         opts.outputDir,
-    outputFilename:    opts.outputFilename,
-    siteTitle:         opts.siteTitle,
-    themeMode:         opts.themeMode,
-    i18nMode:          opts.i18nMode,
-    defaultLocale:     opts.defaultLocale,
-    minifyHtml:        opts.minifyHtml,
-    templatesDir:      opts.templatesDir,
-    localesDir:        opts.localesDir,
-    imgToBase64:       opts.imgToBase64,
-    imgMaxWidth:       opts.imgMaxWidth,
-    imgCompress:       opts.imgCompress,
-    codeHighlight:          opts.codeHighlight,
-    codeCopy:               opts.codeCopy,
-    codeHighlightTheme:     opts.codeHighlightTheme,
+    template: opts.template,
+    locale: opts.locale,
+    output: opts.output,
+    source: opts.source,
+    outputDir: opts.outputDir,
+    outputFilename: opts.outputFilename,
+    siteTitle: opts.siteTitle,
+    themeMode: opts.themeMode,
+    i18nMode: opts.i18nMode,
+    defaultLocale: opts.defaultLocale,
+    minifyHtml: opts.minifyHtml,
+    templatesDir: opts.templatesDir,
+    localesDir: opts.localesDir,
+    imgToBase64: opts.imgToBase64,
+    imgMaxWidth: opts.imgMaxWidth,
+    imgCompress: opts.imgCompress,
+    codeHighlight: opts.codeHighlight,
+    codeCopy: opts.codeCopy,
+    codeHighlightTheme: opts.codeHighlightTheme,
     codeHighlightThemeLight: opts.codeHighlightThemeLight,
-    version:                opts.version,
+    version: opts.version,
   };
 }

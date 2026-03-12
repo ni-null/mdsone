@@ -85,10 +85,10 @@ export function sanitizeTableCells(html: string): string {
  */
 function createMarkdownIt(extensions: string[]): MarkdownIt {
   const opts: MarkdownItOptions = {
-    html:        true,
-    xhtmlOut:    false,
-    breaks:      extensions.includes("nl2br"),
-    linkify:     false,
+    html: true,
+    xhtmlOut: false,
+    breaks: extensions.includes("nl2br"),
+    linkify: false,
     typographer: false,
   };
   const md = new MarkdownIt(opts);

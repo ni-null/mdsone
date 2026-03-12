@@ -378,12 +378,12 @@ export async function loadLibFiles(
     const stylesDir = resolveHljsStylesDir();
 
     // CSS themes（從 npm highlight.js 套件讀取，高亮已在 build 時完成）
-    const theme      = config.code_highlight_theme       || "atom-one-dark";
+    const theme = config.code_highlight_theme || "atom-one-dark";
     const themeLight = config.code_highlight_theme_light || "atom-one-light";
-    const darkFile  = `${theme}.min.css`;
+    const darkFile = `${theme}.min.css`;
     const lightFile = `${themeLight}.min.css`;
 
-    const darkCss  = await tryRead(path.join(stylesDir, darkFile),  darkFile);
+    const darkCss = await tryRead(path.join(stylesDir, darkFile), darkFile);
     const lightCss = await tryRead(path.join(stylesDir, lightFile), lightFile);
 
     // Inject dual-theme <style> tags (一個啟用、一個 disabled)
