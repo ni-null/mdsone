@@ -265,7 +265,7 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight);
+      let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight, 0);
       if (config.img_to_base64) {
         const baseDir = path.dirname(srcFile);
         html = await embedImagesInHtml(html, baseDir, {
@@ -294,12 +294,12 @@ async function main(): Promise<void> {
     if (isMultiFile) {
       // 多檔案合併（依 inputs 輸入順序）
       const documents: Record<string, string> = {};
-      for (const filepath of inputFiles) {
+      for (const [i, filepath] of inputFiles.entries()) {
         const tabName = path.basename(filepath, path.extname(filepath));
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
+            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, i);
             if (config.img_to_base64) {
               html = await embedImagesInHtml(html, path.dirname(filepath), {
                 maxWidth: config.img_max_width || undefined,
@@ -341,12 +341,12 @@ async function main(): Promise<void> {
       for (const [locale, dir] of Object.entries(localeDirs)) {
         const mdFiles = await scanMarkdownFiles(dir);
         const localeDocs: Record<string, string> = {};
-        for (const { filename, filepath } of mdFiles) {
+        for (const [idx, { filename, filepath }] of mdFiles.entries()) {
           const tabName = filename.replace(/\.(md|markdown)$/i, "");
           try {
             const content = await readTextFile(filepath);
             if (content.trim()) {
-              let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
+              let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
               if (config.img_to_base64) {
                 html = await embedImagesInHtml(html, dir, {
                   maxWidth: config.img_max_width || undefined,
@@ -393,12 +393,12 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      for (const { filename, filepath } of mdFiles) {
+      for (const [idx, { filename, filepath }] of mdFiles.entries()) {
         const tabName = filename.replace(/\.(md|markdown)$/i, "");
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
+            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
             if (config.img_to_base64) {
               html = await embedImagesInHtml(html, folderPath, {
                 maxWidth: config.img_max_width || undefined,
@@ -481,7 +481,7 @@ async function main(): Promise<void> {
           console.warn(`[WARN] Skipping '${path.basename(filepath)}' — file is empty.`);
           continue;
         }
-        let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
+        let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, 0);
         if (config.img_to_base64) {
           html = await embedImagesInHtml(html, baseDir, {
             maxWidth: config.img_max_width || undefined,

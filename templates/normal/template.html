@@ -234,7 +234,7 @@
                 // Query only within the active tab-content to avoid hitting
                 // duplicate ids from other tabs that are still in the DOM (display:none)
                 const activeContent = contentArea.querySelector(".tab-content.active")
-                const target = activeContent ? activeContent.querySelector(`#${targetId}`) : null
+                const target = activeContent ? activeContent.querySelector(`#${CSS.escape(targetId)}`) : null
                 if (target) {
                   let offset = 0
                   let el = target

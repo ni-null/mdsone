@@ -7,6 +7,8 @@
 import MarkdownIt, { type Options as MarkdownItOptions } from "markdown-it";
 // @ts-ignore — markdown-it-attrs 沒有官方型別宣告
 import markdownItAttrs from "markdown-it-attrs";
+// @ts-ignore — markdown-it-anchor 型別宣告不穩，直接忽略
+import markdownItAnchor from "markdown-it-anchor";
 import hljs from "highlight.js";
 
 /** `[locale]` 目錄名稱的正則（例如 [en]、[zh-TW]） */
@@ -17,6 +19,7 @@ export const LOCALE_DIR_PATTERN = /^\[(.+)\]$/;
 /**
  * 將標題文字轉換為 URL-friendly slug（對應 Python slugify()）。
  * 規則：小寫、移除 HTML 標籤、空白/底線→連字號、移除非 ASCII 英數、去重複連字號
+ * @deprecated 內部已改用 markdown-it-anchor；此函式保留供外部呼叫。
  */
 export function slugify(text: string): string {
   let slug = text.toLowerCase();
@@ -29,25 +32,14 @@ export function slugify(text: string): string {
 }
 
 /**
- * 為 HTML 中的 h1–h6 標籤加入 id 屬性（對應 Python add_heading_ids()）。
- * 若已有 id 則跳過；重複 id 加 -2、-3 後綴。
+ * markdown-it-anchor 使用的 slugify：保留非 ASCII（中文），
+ * 加上 `f{fileIndex}-` 前綴確保跨檔案合併時 id 唯一。
  */
-export function addHeadingIds(html: string): string {
-  const seenIds: Record<string, number> = {};
-
-  return html.replace(/<(h[1-6])>([^<]+)<\/\1>/g, (match, tag: string, text: string) => {
-    if (match.includes("id=")) return match;
-    const baseId = slugify(text);
-    let finalId: string;
-    if (seenIds[baseId]) {
-      seenIds[baseId]++;
-      finalId = `${baseId}-${seenIds[baseId]}`;
-    } else {
-      seenIds[baseId] = 1;
-      finalId = baseId;
-    }
-    return `<${tag} id="${finalId}">${text}</${tag}>`;
-  });
+function makeAnchorSlugify(fileIndex: number): (s: string) => string {
+  return (s: string) => {
+    const slug = String(s).trim().toLowerCase().replace(/\s+/g, "-");
+    return `f${fileIndex}-${slug || "heading"}`;
+  };
 }
 
 /**
@@ -82,8 +74,10 @@ export function sanitizeTableCells(html: string): string {
  *   nl2br         → breaks: true（每行換行 → <br>）
  *   attr_list     → markdown-it-attrs 插件
  *   sane_lists    → markdown-it 內建（行為差異小，以 lists: true 模擬）
+ *
+ * @param fileIndex - 用於產生跨檔案唯一的 heading id（預設 0）
  */
-function createMarkdownIt(extensions: string[]): MarkdownIt {
+function createMarkdownIt(extensions: string[], fileIndex: number): MarkdownIt {
   const opts: MarkdownItOptions = {
     html: true,
     xhtmlOut: false,
@@ -95,16 +89,24 @@ function createMarkdownIt(extensions: string[]): MarkdownIt {
   if (extensions.includes("attr_list")) {
     md.use(markdownItAttrs);
   }
+  // 注入 anchor 插件：以 f{fileIndex}- 前綴 + 保留非 ASCII 的 slugify 產生穩定 id
+  md.use(markdownItAnchor, {
+    slugify: makeAnchorSlugify(fileIndex),
+    // 不產生錨點連結符號，保持輸出乾淨
+    permalink: false,
+  });
   return md;
 }
 
 /**
  * 將 Markdown 文字轉換為 HTML（對應 Python markdown_to_html()）。
- * 包含：heading id 注入、code block brace 轉義、code fence 語言屬性、table cell XSS 過濾。
+ * 包含：heading id 注入（via markdown-it-anchor）、code block brace 轉義、
+ * code fence 語言屬性、table cell XSS 過濾。
  * @param codeHighlight - true 時在後端直接套用 highlight.js，輸出帶 span 的靜態 HTML。
+ * @param fileIndex     - 合併多檔時的檔案順序索引（0-based），用於確保 heading id 跨檔唯一。
  */
-export function markdownToHtml(markdownText: string, extensions: string[], codeHighlight?: boolean): string {
-  const md = createMarkdownIt(extensions);
+export function markdownToHtml(markdownText: string, extensions: string[], codeHighlight?: boolean, fileIndex = 0): string {
+  const md = createMarkdownIt(extensions, fileIndex);
 
   // 覆寫 fence renderer
   const defaultFence = md.renderer.rules.fence;
@@ -135,7 +137,7 @@ export function markdownToHtml(markdownText: string, extensions: string[], codeH
   };
 
   let html = md.render(markdownText);
-  html = addHeadingIds(html);
+  // addHeadingIds 已由 markdown-it-anchor 取代，不再需要後處理
   html = escapeCodeBlocks(html);
   html = sanitizeTableCells(html);
   return html;
