@@ -25,7 +25,6 @@ export { DEFAULT_CONFIG, mergeConfigs, cliArgsToConfig } from "./config.js";
 // Markdown
 export {
   slugify,
-  addHeadingIds,
   escapeCodeBlocks,
   sanitizeTableCells,
   markdownToHtml,
