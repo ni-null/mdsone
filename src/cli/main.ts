@@ -113,6 +113,18 @@ async function main(): Promise<void> {
   const isMultiFile  = inputFiles.length > 1;
   const isFolder     = inputDirs.length === 1;
 
+  // ⑤-a 檢查檔案類型：所有檔案輸入必須是 markdown
+  if (inputFiles.length > 0) {
+    const invalidFiles = inputFiles.filter(f => !isMdFile(f));
+    if (invalidFiles.length > 0) {
+      const msg = invalidFiles.length === inputFiles.length && inputFiles.length === 1
+        ? `Expected .md or .markdown file, got '${path.extname(invalidFiles[0]) || '(no extension)'}'`
+        : `Not all files are markdown: ${invalidFiles.map(p => path.basename(p)).join(', ')}`;
+      console.error(`[Error] Invalid input file(s). ${msg}`);
+      process.exit(1);
+    }
+  }
+
   // ⑤.₁ i18n 模式必須是單一資料夾
   if (config.i18n_mode && !isFolder) {
     console.error("[Error] i18n mode only supports a single folder as input.");
