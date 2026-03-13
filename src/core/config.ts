@@ -9,32 +9,33 @@ import type { Config, CliArgs } from "./types.js";
 export const DEFAULT_CONFIG: Config = {
   // paths
   markdown_source_dir: "./markdown",
-  output_file:         "main.html",
-  output_dir:          "",
-  output_filename:     "",
-  templates_dir:       "templates",
-  locales_dir:         "locales",
+  output_file: "main.html",
+  output_dir: "",
+  output_filename: "",
+  templates_dir: "templates",
+  locales_dir: "locales",
   // build
-  default_template:     "normal",
-  minify_html:          true,
-  markdown_extensions:  ["tables", "fenced_code", "nl2br", "sane_lists", "attr_list"],
+  default_template: "normal",
+  minify_html: true,
+  markdown_extensions: ["tables", "fenced_code", "nl2br", "sane_lists", "attr_list"],
   template_config_file: "template.config.json",
-  build_date:           "",
+  build_date: "",
   // site
   site_title: "Documentation",
   theme_mode: "light",
   // i18n
-  locale:         "en",
-  i18n_mode:      false,
+  locale: "en",
+  i18n_mode: false,
   default_locale: "",
   // advanced
-  img_to_base64:  false,
-  img_max_width:  0,
-  img_compress:   0,
+  img_to_base64: false,
+  img_max_width: 0,
+  img_compress: 0,
   // code features
-  code_highlight:       true,
-  code_copy:            true,
+  code_highlight: true,
+  code_copy: true,
   code_highlight_theme: "atom-one-dark",
+  code_highlight_theme_light: "atom-one-light",
 };
 
 /**
@@ -66,25 +67,25 @@ function filterDefined<T extends object>(obj: Partial<T>): Partial<T> {
 export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   const out: Partial<Config> = {};
   // Paths
-  if (args.source)         out.markdown_source_dir  = args.source;
-  if (args.output)         out.output_file          = args.output;
-  if (args.outputDir)      out.output_dir           = args.outputDir;
-  if (args.outputFilename) out.output_filename      = args.outputFilename;
-  if (args.templatesDir)   out.templates_dir        = args.templatesDir;
-  if (args.localesDir)     out.locales_dir          = args.localesDir;
+  if (args.source) out.markdown_source_dir = args.source;
+  if (args.output) out.output_file = args.output;
+  if (args.outputDir) out.output_dir = args.outputDir;
+  if (args.outputFilename) out.output_filename = args.outputFilename;
+  if (args.templatesDir) out.templates_dir = args.templatesDir;
+  if (args.localesDir) out.locales_dir = args.localesDir;
   // Templates & Styling
-  if (args.template)       out.default_template     = args.template;
-  if (args.siteTitle)      out.site_title           = args.siteTitle;
-  if (args.themeMode)      out.theme_mode           = args.themeMode;
+  if (args.template) out.default_template = args.template;
+  if (args.siteTitle) out.site_title = args.siteTitle;
+  if (args.themeMode) out.theme_mode = args.themeMode;
   if (args.minifyHtml !== undefined) {
     out.minify_html = ["true", "1", "yes", "on"].includes(args.minifyHtml!.toLowerCase());
   }
   // Internationalization
-  if (args.locale)         out.locale               = args.locale;
+  if (args.locale) out.locale = args.locale;
   if (args.i18nMode !== undefined) {
     out.i18n_mode = ["true", "1", "yes", "on"].includes(args.i18nMode!.toLowerCase());
   }
-  if (args.defaultLocale)  out.default_locale       = args.defaultLocale;
+  if (args.defaultLocale) out.default_locale = args.defaultLocale;
   // Image Processing
   if (args.imgToBase64 !== undefined) {
     out.img_to_base64 = ["true", "1", "yes", "on"].includes(args.imgToBase64!.toLowerCase());
@@ -105,6 +106,7 @@ export function cliArgsToConfig(args: CliArgs): Partial<Config> {
     out.code_copy = !["disable", "false", "0", "off"].includes(args.codeCopy.toLowerCase());
   }
   if (args.codeHighlightTheme) out.code_highlight_theme = args.codeHighlightTheme;
+  if (args.codeHighlightThemeLight) out.code_highlight_theme_light = args.codeHighlightThemeLight;
   return out;
 }
 
@@ -120,7 +122,7 @@ export function resolveOutputFile(
 ): string {
   if (outputExplicit) return config.output_file;
   if (config.output_dir || config.output_filename) {
-    const dir  = config.output_dir  || getDirname(config.output_file);
+    const dir = config.output_dir || getDirname(config.output_file);
     const name = config.output_filename || getBasename(config.output_file);
     return joinFn(dir, name);
   }

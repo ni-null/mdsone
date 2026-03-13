@@ -38,26 +38,27 @@ export function envToConfig(): Partial<Config> {
   const out: Partial<Config> = {};
 
   if (e["MARKDOWN_SOURCE_DIR"]) out.markdown_source_dir = e["MARKDOWN_SOURCE_DIR"];
-  if (e["OUTPUT_FILE"])         out.output_file          = e["OUTPUT_FILE"];
-  if (e["OUTPUT_DIR"])          out.output_dir           = e["OUTPUT_DIR"];
-  if (e["OUTPUT_FILENAME"])     out.output_filename      = e["OUTPUT_FILENAME"];
-  if (e["TEMPLATES_DIR"])       out.templates_dir        = e["TEMPLATES_DIR"];
-  if (e["LOCALES_DIR"])         out.locales_dir          = e["LOCALES_DIR"];
-  if (e["DEFAULT_TEMPLATE"])    out.default_template     = e["DEFAULT_TEMPLATE"];
+  if (e["OUTPUT_FILE"]) out.output_file = e["OUTPUT_FILE"];
+  if (e["OUTPUT_DIR"]) out.output_dir = e["OUTPUT_DIR"];
+  if (e["OUTPUT_FILENAME"]) out.output_filename = e["OUTPUT_FILENAME"];
+  if (e["TEMPLATES_DIR"]) out.templates_dir = e["TEMPLATES_DIR"];
+  if (e["LOCALES_DIR"]) out.locales_dir = e["LOCALES_DIR"];
+  if (e["DEFAULT_TEMPLATE"]) out.default_template = e["DEFAULT_TEMPLATE"];
   if (e["TEMPLATE_CONFIG_FILE"]) out.template_config_file = e["TEMPLATE_CONFIG_FILE"];
-  if (e["BUILD_DATE"])          out.build_date           = e["BUILD_DATE"];
-  if (e["SITE_TITLE"])          out.site_title           = e["SITE_TITLE"];
-  if (e["THEME_MODE"])          out.theme_mode           = e["THEME_MODE"] as Config["theme_mode"];
-  if (e["LOCALE"])              out.locale               = e["LOCALE"];
-  if (e["DEFAULT_LOCALE"])      out.default_locale       = e["DEFAULT_LOCALE"];
-  if (e["MINIFY_HTML"]    !== undefined) out.minify_html   = parseBool(e["MINIFY_HTML"],    true);
-  if (e["I18N_MODE"]      !== undefined) out.i18n_mode     = parseBool(e["I18N_MODE"],      false);
+  if (e["BUILD_DATE"]) out.build_date = e["BUILD_DATE"];
+  if (e["SITE_TITLE"]) out.site_title = e["SITE_TITLE"];
+  if (e["THEME_MODE"]) out.theme_mode = e["THEME_MODE"] as Config["theme_mode"];
+  if (e["LOCALE"]) out.locale = e["LOCALE"];
+  if (e["DEFAULT_LOCALE"]) out.default_locale = e["DEFAULT_LOCALE"];
+  if (e["MINIFY_HTML"] !== undefined) out.minify_html = parseBool(e["MINIFY_HTML"], true);
+  if (e["I18N_MODE"] !== undefined) out.i18n_mode = parseBool(e["I18N_MODE"], false);
   if (e["IMG_TO_BASE64"] !== undefined) out.img_to_base64 = parseBool(e["IMG_TO_BASE64"], false);
-  if (e["IMG_MAX_WIDTH"]  !== undefined) { const w = parseInt(e["IMG_MAX_WIDTH"]!, 10);  if (!isNaN(w) && w > 0) out.img_max_width = w; }
-  if (e["IMG_COMPRESS"]   !== undefined) { const q = parseInt(e["IMG_COMPRESS"]!, 10);   if (!isNaN(q)) out.img_compress = Math.max(1, Math.min(100, q)); }
+  if (e["IMG_MAX_WIDTH"] !== undefined) { const w = parseInt(e["IMG_MAX_WIDTH"]!, 10); if (!isNaN(w) && w > 0) out.img_max_width = w; }
+  if (e["IMG_COMPRESS"] !== undefined) { const q = parseInt(e["IMG_COMPRESS"]!, 10); if (!isNaN(q)) out.img_compress = Math.max(1, Math.min(100, q)); }
   if (e["CODE_HIGHLIGHT"] !== undefined) out.code_highlight = !["disable", "false", "0", "off"].includes(e["CODE_HIGHLIGHT"]!.toLowerCase());
-  if (e["CODE_COPY"]      !== undefined) out.code_copy      = !["disable", "false", "0", "off"].includes(e["CODE_COPY"]!.toLowerCase());
+  if (e["CODE_COPY"] !== undefined) out.code_copy = !["disable", "false", "0", "off"].includes(e["CODE_COPY"]!.toLowerCase());
   if (e["CODE_HIGHLIGHT_THEME"]) out.code_highlight_theme = e["CODE_HIGHLIGHT_THEME"];
+  if (e["CODE_HIGHLIGHT_THEME_LIGHT"]) out.code_highlight_theme_light = e["CODE_HIGHLIGHT_THEME_LIGHT"];
   if (e["MARKDOWN_EXTENSIONS"]) {
     out.markdown_extensions = parseList(e["MARKDOWN_EXTENSIONS"], DEFAULT_CONFIG.markdown_extensions);
   }
@@ -67,10 +68,10 @@ export function envToConfig(): Partial<Config> {
 // ── 從 TOML 段落提取 Partial<Config>（對應 Python _raw.get(...)）──
 
 function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
-  const paths  = (raw["paths"]  ?? {}) as Record<string, unknown>;
-  const build  = (raw["build"]  ?? {}) as Record<string, unknown>;
-  const site   = (raw["site"]   ?? {}) as Record<string, unknown>;
-  const i18n   = (raw["i18n"]   ?? {}) as Record<string, unknown>;
+  const paths = (raw["paths"] ?? {}) as Record<string, unknown>;
+  const build = (raw["build"] ?? {}) as Record<string, unknown>;
+  const site = (raw["site"] ?? {}) as Record<string, unknown>;
+  const i18n = (raw["i18n"] ?? {}) as Record<string, unknown>;
 
   const out: Partial<Config> = {};
 
@@ -79,30 +80,31 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   const l = (v: unknown): string[] | undefined => (Array.isArray(v) ? (v as string[]) : undefined);
 
   if (s(paths["markdown_source_dir"])) out.markdown_source_dir = s(paths["markdown_source_dir"]);
-  if (s(paths["output_file"]))         out.output_file          = s(paths["output_file"]);
-  if (s(paths["output_dir"]))          out.output_dir           = s(paths["output_dir"]);
-  if (s(paths["output_filename"]))     out.output_filename      = s(paths["output_filename"]);
-  if (s(paths["templates_dir"]))       out.templates_dir        = s(paths["templates_dir"]);
-  if (s(paths["locales_dir"]))         out.locales_dir          = s(paths["locales_dir"]);
+  if (s(paths["output_file"])) out.output_file = s(paths["output_file"]);
+  if (s(paths["output_dir"])) out.output_dir = s(paths["output_dir"]);
+  if (s(paths["output_filename"])) out.output_filename = s(paths["output_filename"]);
+  if (s(paths["templates_dir"])) out.templates_dir = s(paths["templates_dir"]);
+  if (s(paths["locales_dir"])) out.locales_dir = s(paths["locales_dir"]);
 
-  if (s(build["default_template"]))    out.default_template     = s(build["default_template"]);
-  if (b(build["minify_html"]) !== undefined) out.minify_html    = b(build["minify_html"]);
-  if (l(build["markdown_extensions"])) out.markdown_extensions  = l(build["markdown_extensions"]);
+  if (s(build["default_template"])) out.default_template = s(build["default_template"]);
+  if (b(build["minify_html"]) !== undefined) out.minify_html = b(build["minify_html"]);
+  if (l(build["markdown_extensions"])) out.markdown_extensions = l(build["markdown_extensions"]);
   if (s(build["template_config_file"])) out.template_config_file = s(build["template_config_file"]);
-  if (s(build["build_date"]))          out.build_date           = s(build["build_date"]);
+  if (s(build["build_date"])) out.build_date = s(build["build_date"]);
   if (b(build["img_to_base64"]) !== undefined) out.img_to_base64 = b(build["img_to_base64"]);
   if (typeof build["img_max_width"] === "number" && (build["img_max_width"] as number) > 0) out.img_max_width = build["img_max_width"] as number;
   if (typeof build["img_compress"] === "number") out.img_compress = Math.max(1, Math.min(100, build["img_compress"] as number));
   if (b(build["code_highlight"]) !== undefined) out.code_highlight = b(build["code_highlight"])!;
-  if (b(build["code_copy"])      !== undefined) out.code_copy      = b(build["code_copy"])!;
-  if (s(build["code_highlight_theme"]))          out.code_highlight_theme = s(build["code_highlight_theme"]);
+  if (b(build["code_copy"]) !== undefined) out.code_copy = b(build["code_copy"])!;
+  if (s(build["code_highlight_theme"])) out.code_highlight_theme = s(build["code_highlight_theme"]);
+  if (s(build["code_highlight_theme_light"])) out.code_highlight_theme_light = s(build["code_highlight_theme_light"]);
 
-  if (s(site["title"]))                out.site_title           = s(site["title"]);
-  if (s(site["theme_mode"]))           out.theme_mode           = s(site["theme_mode"]) as Config["theme_mode"];
+  if (s(site["title"])) out.site_title = s(site["title"]);
+  if (s(site["theme_mode"])) out.theme_mode = s(site["theme_mode"]) as Config["theme_mode"];
 
-  if (s(i18n["locale"]))               out.locale               = s(i18n["locale"]);
-  if (b(i18n["mode"]) !== undefined)   out.i18n_mode            = b(i18n["mode"]);
-  if (s(i18n["default_locale"]))       out.default_locale       = s(i18n["default_locale"]);
+  if (s(i18n["locale"])) out.locale = s(i18n["locale"]);
+  if (b(i18n["mode"]) !== undefined) out.i18n_mode = b(i18n["mode"]);
+  if (s(i18n["default_locale"])) out.default_locale = s(i18n["default_locale"]);
 
   return out;
 }

@@ -6,12 +6,21 @@
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import type { Config, I18nFile, TemplateData } from "../../core/types.js";
 import { LOCALE_DIR_PATTERN } from "../../core/markdown.js";
 
-/** 讀取 UTF-8 文字檔 */
+/** highlight.js styles/ 目錄（從 npm 套件解析，不依賴 lib/ 目錄） */
+function resolveHljsStylesDir(): string {
+  const require = createRequire(import.meta.url);
+  const pkgJson = require.resolve("highlight.js/package.json");
+  return path.join(path.dirname(pkgJson), "styles");
+}
+
+/** 讀取 UTF-8 文字檔（自動去除 BOM） */
 export async function readTextFile(filePath: string): Promise<string> {
-  return fs.readFile(filePath, "utf-8");
+  const content = await fs.readFile(filePath, "utf-8");
+  return content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content;
 }
 
 /** 寫入 UTF-8 文字檔 */
@@ -49,14 +58,14 @@ export function isMdFile(filePath: string): boolean {
 
 /** 副檔名 → MIME type 對應表 */
 const MIME_MAP: Record<string, string> = {
-  ".png":  "image/png",
-  ".jpg":  "image/jpeg",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
-  ".gif":  "image/gif",
+  ".gif": "image/gif",
   ".webp": "image/webp",
-  ".svg":  "image/svg+xml",
-  ".bmp":  "image/bmp",
-  ".ico":  "image/x-icon",
+  ".svg": "image/svg+xml",
+  ".bmp": "image/bmp",
+  ".ico": "image/x-icon",
   ".avif": "image/avif",
 };
 
@@ -102,9 +111,9 @@ async function processImageBuffer(
     if (opts.maxWidth) pipe = pipe.resize({ width: opts.maxWidth, withoutEnlargement: true });
     if (opts.compress) {
       const q = opts.compress;
-      if (mime === "image/jpeg")  pipe = pipe.jpeg({ quality: q });
+      if (mime === "image/jpeg") pipe = pipe.jpeg({ quality: q });
       else if (mime === "image/webp") pipe = pipe.webp({ quality: q });
-      else if (mime === "image/png")  pipe = pipe.png({ quality: q });
+      else if (mime === "image/png") pipe = pipe.png({ quality: q });
     }
     const { data, info } = await pipe.toBuffer({ resolveWithObject: true });
     return { buffer: data, mime: info.format ? `image/${info.format}` : mime };
@@ -282,12 +291,12 @@ export async function loadTemplateFiles(
 ): Promise<TemplateData> {
   const templateDir = path.join(templatesDir, templateName);
 
-  const css      = await readTextFile(path.join(templateDir, "style.css"));
+  const css = await readTextFile(path.join(templateDir, "style.css"));
   const template = await readTextFile(path.join(templateDir, "template.html"));
 
   // 預設值
   let metadata = {};
-  let version       = "1.0.0";
+  let version = "1.0.0";
   let schema_version = "v1";
   let toc_config = { enabled: false, levels: [2, 3] };
 
@@ -295,9 +304,9 @@ export async function loadTemplateFiles(
   if (fsSync.existsSync(configPath)) {
     try {
       const raw = JSON.parse(await readTextFile(configPath)) as Record<string, unknown>;
-      metadata         = (raw["_metadata"]        ?? {}) as object;
-      version          = (metadata as Record<string, string>)["version"]        ?? "1.0.0";
-      schema_version   = (metadata as Record<string, string>)["schema_version"] ?? "v1";
+      metadata = (raw["_metadata"] ?? {}) as object;
+      version = (metadata as Record<string, string>)["version"] ?? "1.0.0";
+      schema_version = (metadata as Record<string, string>)["schema_version"] ?? "v1";
       if (raw["toc"]) toc_config = raw["toc"] as typeof toc_config;
     } catch (e) {
       console.warn(`[WARN] Failed to load template config: ${e}`);
@@ -307,14 +316,14 @@ export async function loadTemplateFiles(
   // 掃描 assets/ 資料夾，自動收集 CSS / JS 檔案並依數字前綴排序後 inline 注入
   const assetsDir = path.join(templateDir, "assets");
   const assets_css: Array<{ filename: string; content: string }> = [];
-  const assets_js:  Array<{ filename: string; content: string }> = [];
+  const assets_js: Array<{ filename: string; content: string }> = [];
 
   if (fsSync.existsSync(assetsDir)) {
     const entries = fsSync.readdirSync(assetsDir);
     const cssFiles = entries.filter(f => f.endsWith(".css")).sort((a, b) =>
       a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
     );
-    const jsFiles  = entries.filter(f => f.endsWith(".js")).sort((a, b) =>
+    const jsFiles = entries.filter(f => f.endsWith(".js")).sort((a, b) =>
       a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
     );
 
@@ -362,53 +371,41 @@ export async function loadLibFiles(
   };
 
   const cssParts: string[] = [];
-  const jsParts:  string[] = [];
+  const jsParts: string[] = [];
 
   // ── syntax highlight ─────────────────────────────────
   if (config.code_highlight) {
-    const hlDir = path.join(libDir, "highlight");
+    const stylesDir = resolveHljsStylesDir();
 
-    // JS
-    const hlJs = await tryRead(path.join(hlDir, "highlight.min.js"), "highlight.min.js");
+    // CSS themes（從 npm highlight.js 套件讀取，高亮已在 build 時完成）
+    const theme = config.code_highlight_theme || "atom-one-dark";
+    const themeLight = config.code_highlight_theme_light || "atom-one-light";
+    const darkFile = `${theme}.min.css`;
+    const lightFile = `${themeLight}.min.css`;
 
-    // CSS themes
-    const theme      = config.code_highlight_theme || "atom-one-dark";
-    const darkFile   = `${theme}.min.css`;
-    const lightFile  = "atom-one-light.min.css";
-
-    const darkCss  = await tryRead(path.join(hlDir, "css", darkFile),  darkFile);
-    const lightCss = await tryRead(path.join(hlDir, "css", lightFile), lightFile);
+    const darkCss = await tryRead(path.join(stylesDir, darkFile), darkFile);
+    const lightCss = await tryRead(path.join(stylesDir, lightFile), lightFile);
 
     // Inject dual-theme <style> tags (一個啟用、一個 disabled)
-    if (darkCss)  cssParts.push(`<style id="hljs-theme-dark">${darkCss}</style>`);
+    if (darkCss) cssParts.push(`<style id="hljs-theme-dark">${darkCss}</style>`);
     if (lightCss) cssParts.push(`<style id="hljs-theme-light" disabled>${lightCss}</style>`);
 
-    // Inject highlight.js + helpers as a single <script>
-    if (hlJs) {
-      jsParts.push(
-        `<script>\n` +
-        `try {\n` +
-        `/* highlight.min.js */\n` +
-        hlJs + `\n` +
-        `window.__mdsone_highlight = function(container) {\n` +
-        `  if (typeof hljs === 'undefined') return;\n` +
-        `  var blocks = (container || document).querySelectorAll('pre code');\n` +
-        `  blocks.forEach(function(b) { if (!b.dataset.highlighted) hljs.highlightElement(b); });\n` +
-        `};\n` +
-        `window.__mdsone_hljs_theme = function(isDark) {\n` +
-        `  var dark  = document.getElementById('hljs-theme-dark');\n` +
-        `  var light = document.getElementById('hljs-theme-light');\n` +
-        `  if (dark)  dark.disabled  = !isDark;\n` +
-        `  if (light) light.disabled =  isDark;\n` +
-        `};\n` +
-        `} catch(e) {\n` +
-        `  console.warn('[mdsone] Failed to load highlight.js:', e.message);\n` +
-        `  window.__mdsone_highlight = function() {};\n` +
-        `  window.__mdsone_hljs_theme = function() {};\n` +
-        `}\n` +
-        `</script>`,
-      );
-    }
+    // 注入主題切換 helper（不再需要 highlight.js runtime，高亮已靜態完成）
+    jsParts.push(
+      `<script>\n` +
+      `try {\n` +
+      `window.__mdsone_hljs_theme = function(isDark) {\n` +
+      `  var dark  = document.getElementById('hljs-theme-dark');\n` +
+      `  var light = document.getElementById('hljs-theme-light');\n` +
+      `  if (dark)  dark.disabled  = !isDark;\n` +
+      `  if (light) light.disabled =  isDark;\n` +
+      `};\n` +
+      `} catch(e) {\n` +
+      `  console.warn('[mdsone] hljs theme switch failed:', e.message);\n` +
+      `  window.__mdsone_hljs_theme = function() {};\n` +
+      `}\n` +
+      `</script>`
+    );
   }
 
   // ── copy button ──────────────────────────────────────
@@ -429,6 +426,6 @@ export async function loadLibFiles(
 
   return {
     css: cssParts.join("\n"),
-    js:  jsParts.join("\n"),
+    js: jsParts.join("\n"),
   };
 }

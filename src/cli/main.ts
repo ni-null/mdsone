@@ -1,6 +1,5 @@
 // ============================================================
-// src/cli/main.ts — CLI Orchestrator
-// 對應 Python main.py：串接所有 adapter + core
+// src/cli/main.ts — CLI Orchestrator 
 // ============================================================
 
 import path from "node:path";
@@ -84,7 +83,7 @@ async function main(): Promise<void> {
 
   // ③-b 單一 .md 檔案來源：若未明確指定輸出位置，自動輸出到來源同目錄
   if (fileExists(config.markdown_source_dir) && isMdFile(config.markdown_source_dir)
-      && !args.output && !args.outputDir) {
+    && !args.output && !args.outputDir) {
     const sourceDir = path.dirname(path.resolve(config.markdown_source_dir));
     const outName = config.output_filename || "main.html";
     config.output_file = path.join(sourceDir, outName);
@@ -167,7 +166,7 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      let html = markdownToHtml(fileContent, config.markdown_extensions);
+      let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight);
       if (config.img_to_base64) {
         const baseDir = path.dirname(path.resolve(config.markdown_source_dir));
         html = await embedImagesInHtml(html, baseDir, {
@@ -185,7 +184,7 @@ async function main(): Promise<void> {
         : globalLocale;
       const buildDate = config.build_date || (() => {
         const d = new Date();
-        return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
       })();
       const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
 
@@ -221,7 +220,7 @@ async function main(): Promise<void> {
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions);
+            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
             if (config.img_to_base64) {
               html = await embedImagesInHtml(html, dir, {
                 maxWidth: config.img_max_width || undefined,
@@ -256,7 +255,7 @@ async function main(): Promise<void> {
     }
     const buildDate = config.build_date || (() => {
       const d = new Date();
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
     })();
     const multiI18nStrings = getAllLocalesTemplateStrings(localeFileMap, buildDate);
 
@@ -285,7 +284,7 @@ async function main(): Promise<void> {
       try {
         const content = await readTextFile(filepath);
         if (content.trim()) {
-          let html = markdownToHtml(content, config.markdown_extensions);
+          let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight);
           if (config.img_to_base64) {
             html = await embedImagesInHtml(html, config.markdown_source_dir, {
               maxWidth: config.img_max_width || undefined,
@@ -312,7 +311,7 @@ async function main(): Promise<void> {
       : globalLocale;
     const buildDate = config.build_date || (() => {
       const d = new Date();
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
     })();
     const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
 
@@ -333,11 +332,11 @@ async function main(): Promise<void> {
   const src = config.markdown_source_dir;
   const tpl = config.default_template;
   const parts = ["npx mdsone"];
-  if (tpl !== "normal")      parts.push(`--template ${tpl}`);
-  if (config.i18n_mode)      parts.push(`--i18n-mode true`);
+  if (tpl !== "normal") parts.push(`--template ${tpl}`);
+  if (config.i18n_mode) parts.push(`--i18n-mode true`);
   else if (config.locale !== "en") parts.push(`--locale ${config.locale}`);
-  if (args.source)           parts.push(`--source "${src}"`);
-  if (args.output)           parts.push(`--output "${config.output_file}"`);
+  if (args.source) parts.push(`--source "${src}"`);
+  if (args.output) parts.push(`--output "${config.output_file}"`);
   console.info(`[INFO] ${parts.join(" ")}`);
   console.info(`[INFO] Output: ${config.output_file}`);
 }

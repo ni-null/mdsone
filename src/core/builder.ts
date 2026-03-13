@@ -23,7 +23,7 @@ import { assembleTemplate, buildExtraTags } from "./template.js";
  */
 export function minifyHtml(html: string): string {
   const scripts: string[] = [];
-  const styles:  string[] = [];
+  const styles: string[] = [];
 
   let result = html.replace(/<script[\s\S]*?<\/script>/gi, (match) => {
     scripts.push(match);
@@ -38,8 +38,8 @@ export function minifyHtml(html: string): string {
   result = result.replace(/<!--[\s\S]*?-->/g, "");   // 移除 HTML 注解
   result = result.replace(/>\s+</g, "><");            // 折疊標籤間空白
 
-  scripts.forEach((s, i) => { result = result.replace(`__SCRIPT_PLACEHOLDER_${i}__`, s); });
-  styles.forEach((s, i)  => { result = result.replace(`__STYLE_PLACEHOLDER_${i}__`,  s); });
+  scripts.forEach((s, i) => { result = result.replace(`__SCRIPT_PLACEHOLDER_${i}__`, () => s); });
+  styles.forEach((s, i) => { result = result.replace(`__STYLE_PLACEHOLDER_${i}__`, () => s); });
 
   return result;
 }
@@ -150,13 +150,13 @@ export function buildHtml(params: BuildParams): string {
   const { cssTagsHtml, jsTagsHtml } = buildExtraTags(templateData);
 
   const replacements: Record<string, string> = {
-    TITLE:              config.site_title,
-    LANG:               htmlLang,
-    CSS_CONTENT:        templateData.css,
-    LIB_CSS:            params.libCss ?? "",
-    LIB_JS:             params.libJs  ?? "",
-    EXTRA_CSS:          cssTagsHtml,
-    EXTRA_JS:           jsTagsHtml,
+    TITLE: config.site_title,
+    LANG: htmlLang,
+    CSS_CONTENT: templateData.css,
+    LIB_CSS: params.libCss ?? "",
+    LIB_JS: params.libJs ?? "",
+    EXTRA_CSS: cssTagsHtml,
+    EXTRA_JS: jsTagsHtml,
     MDSONE_DATA_SCRIPT: dataScript,
   };
 
