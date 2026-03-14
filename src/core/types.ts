@@ -164,3 +164,54 @@ export interface mdsoneConfigPayload {
   build_date: string;
   toc: TocConfig;
 }
+
+// ── Plugin 系統 ──────────────────────────────────────────────
+
+/** Plugin getAssets() 的回傳型別，css/js 為含標籤的完整 HTML 字串 */
+export interface PluginAssets {
+  /** 完整 HTML，含 <style> 標籤（例如 <style id="...">...</style>） */
+  css?: string;
+  /** 完整 HTML，含 <script> 標籤（例如 <script>...</script>） */
+  js?: string;
+}
+
+/** Plugin processHtml() 收到的執行上下文 */
+export interface PluginContext {
+  /** 當前處理的 Markdown 檔案所在目錄（用於解析本地圖片相對路徑） */
+  sourceDir: string;
+}
+
+/** Plugin 介面：每個 plugin 必須實作 name 與 isEnabled */
+export interface Plugin {
+  /** plugin 名稱（唯一識別，用於日誌） */
+  readonly name: string;
+
+  /**
+   * 判斷此 plugin 在給定 config 下是否啟用。
+   * 由 plugin 自行宣告啟用條件，manager 不需知道細節。
+   */
+  isEnabled: (config: Config) => boolean;
+
+  /**
+   * HTML 後處理階段（可選）。
+   * 在 markdownToHtml() 之後、buildHtml() 之前執行。
+   * @returns 處理後的 HTML 字串
+   */
+  processHtml?: (
+    html: string,
+    config: Config,
+    context: PluginContext,
+  ) => string | Promise<string>;
+
+  /**
+   * 取得需注入輸出 HTML 的靜態資源（可選）。
+   * 回傳的 css/js 包含完整的 <style>/<script> 標籤。
+   */
+  getAssets?: (config: Config) => PluginAssets | Promise<PluginAssets>;
+
+  /**
+   * 驗證 config 合法性（可選）。
+   * @returns 錯誤訊息陣列，空陣列表示驗證通過
+   */
+  validateConfig?: (config: Config) => string[];
+}
