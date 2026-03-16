@@ -57,6 +57,7 @@ export function envToConfig(): Partial<Config> {
   if (e["CODE_HIGHLIGHT"] !== undefined) out.code_highlight = parseBool(e["CODE_HIGHLIGHT"], true);
   if (e["CODE_COPY"] !== undefined) out.code_copy = parseBool(e["CODE_COPY"], true);
   if (e["CODE_LINE_COPY"] !== undefined) out.code_line_copy = parseBool(e["CODE_LINE_COPY"], false);
+  if (e["CODE_LINE_NUMBER"] !== undefined) out.code_line_number = parseBool(e["CODE_LINE_NUMBER"], false);
   if (e["CODE_HIGHLIGHT_THEME"]) out.code_highlight_theme = e["CODE_HIGHLIGHT_THEME"];
   if (e["CODE_HIGHLIGHT_THEME_LIGHT"]) out.code_highlight_theme_light = e["CODE_HIGHLIGHT_THEME_LIGHT"];
   if (e["MARKDOWN_EXTENSIONS"]) {
@@ -101,6 +102,7 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   const copy = (plugins["copy"] ?? {}) as Record<string, unknown>;
   const highlight = (plugins["highlight"] ?? {}) as Record<string, unknown>;
   const image = (plugins["image"] ?? {}) as Record<string, unknown>;
+  const lineNumber = (plugins["line_number"] ?? {}) as Record<string, unknown>;
   const order = (plugins["order"] ?? undefined) as unknown;
   if (Array.isArray(order)) {
     out.plugins = { ...(out.plugins ?? {}), order: order.filter((x) => typeof x === "string") as string[] };
@@ -124,6 +126,7 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   if (typeof image["compress"] === "number") {
     out.img_compress = Math.max(1, Math.min(100, image["compress"] as number));
   }
+  if (b(lineNumber["enable"]) !== undefined) out.code_line_number = b(lineNumber["enable"])!;
 
   return out;
 }

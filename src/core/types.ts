@@ -31,6 +31,7 @@ export interface Config {
   code_copy: boolean;
   code_copy_mode: string;
   code_line_copy: boolean;
+  code_line_number: boolean;
   code_highlight_theme: string;
   code_highlight_theme_light: string;
   // plugin settings (optional)

@@ -33,6 +33,7 @@ export const DEFAULT_CONFIG: Config = {
   code_copy: true,
   code_copy_mode: "none",
   code_line_copy: false,
+  code_line_number: false,
   code_highlight_theme: "atom-one-dark",
   code_highlight_theme_light: "atom-one-light",
 };

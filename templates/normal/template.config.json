@@ -13,5 +13,6 @@
   },
 
   "_comment_toc": "Enable table of contents in sidebar. levels: array of heading levels to include (e.g. [2, 3] for h2-h3). Set enabled to false to disable TOC.",
-  "_comment_assets": "Place .css and .js files in the assets/ folder — they are auto-scanned, sorted by numeric prefix (e.g. 01-reset.css, 02-layout.css), and inlined into the HTML output. CDN resources can be added directly in template.html as <link> or <script> tags."
+  "_comment_assets": "Place .css and .js files in the assets/ folder; they are auto-scanned, sorted by numeric prefix (e.g. 01-reset.css, 02-layout.css), and inlined into the HTML output. CDN resources can be added directly in template.html as <link> or <script> tags."
 }
+
