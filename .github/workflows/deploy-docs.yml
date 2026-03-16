@@ -46,12 +46,12 @@ jobs:
         run: |
           npx mdsone \
             ./docs \
-            -o ./_site/index.html \
-            --template normal \
-            --i18n-mode  \
+            --i18n-mode \
             --i18n-default zh-TW \
+            --template normal \
             --site-title "MDSone Documentation" \
-            --theme-mode light
+            --theme-mode light \
+            -o ./_site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
