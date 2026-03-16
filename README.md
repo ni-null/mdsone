@@ -1,4 +1,4 @@
-# mdsone — Markdown to Self-Contained HTML
+﻿# mdsone — Markdown to Self-Contained HTML
 
 mdsone is a Markdown conversion tool that transforms Markdown documents into fully functional, self-contained HTML files.
 
@@ -40,9 +40,10 @@ npx mdsone ./docs -m -o manual.html
 
 With image embedding:
 ```bash
-npx mdsone README.md -o index.html --img-to-base64 --img-max-width 400
+npx mdsone README.md -o index.html --img-base64-embed --img-max-width 400
 ```
 
 ## License
 
 [MIT](./LICENSE)
+

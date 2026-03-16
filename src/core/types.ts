@@ -47,7 +47,8 @@ export interface CliArgs {
   defaultLocale?: string;
   minifyHtml?: string;
   templatesDir?: string;
-  localesDir?: string;
+  configPath?: string;
+  noConfig?: boolean;
   imgToBase64?: string;
   imgMaxWidth?: string;
   imgCompress?: string;

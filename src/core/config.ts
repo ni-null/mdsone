@@ -65,7 +65,6 @@ export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   const out: Partial<Config> = {};
   // Paths
   if (args.templatesDir) out.templates_dir = args.templatesDir;
-  if (args.localesDir) out.locales_dir = args.localesDir;
   // Templates & Styling
   if (args.template) out.default_template = args.template;
   if (args.siteTitle) out.site_title = args.siteTitle;
@@ -100,4 +99,3 @@ export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   if (args.codeHighlightThemeLight) out.code_highlight_theme_light = args.codeHighlightThemeLight;
   return out;
 }
-

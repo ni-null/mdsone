@@ -40,7 +40,6 @@ export function envToConfig(): Partial<Config> {
   if (e["MARKDOWN_SOURCE_DIR"]) out.markdown_source_dir = e["MARKDOWN_SOURCE_DIR"];
   if (e["OUTPUT_FILE"]) out.output_file = e["OUTPUT_FILE"];
   if (e["TEMPLATES_DIR"]) out.templates_dir = e["TEMPLATES_DIR"];
-  if (e["LOCALES_DIR"]) out.locales_dir = e["LOCALES_DIR"];
   if (e["DEFAULT_TEMPLATE"]) out.default_template = e["DEFAULT_TEMPLATE"];
   if (e["BUILD_DATE"]) out.build_date = e["BUILD_DATE"];
   if (e["SITE_TITLE"]) out.site_title = e["SITE_TITLE"];
@@ -69,6 +68,7 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   const build = (raw["build"] ?? {}) as Record<string, unknown>;
   const site = (raw["site"] ?? {}) as Record<string, unknown>;
   const i18n = (raw["i18n"] ?? {}) as Record<string, unknown>;
+  const plugins = (raw["plugins"] ?? {}) as Record<string, unknown>;
 
   const out: Partial<Config> = {};
 
@@ -81,19 +81,11 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   else if (s(paths["markdown_source_dir"])) out.markdown_source_dir = s(paths["markdown_source_dir"]);
   if (s(paths["output_file"])) out.output_file = s(paths["output_file"]);
   if (s(paths["templates_dir"])) out.templates_dir = s(paths["templates_dir"]);
-  if (s(paths["locales_dir"])) out.locales_dir = s(paths["locales_dir"]);
 
   if (s(build["default_template"])) out.default_template = s(build["default_template"]);
   if (b(build["minify_html"]) !== undefined) out.minify_html = b(build["minify_html"]);
   if (l(build["markdown_extensions"])) out.markdown_extensions = l(build["markdown_extensions"]);
   if (s(build["build_date"])) out.build_date = s(build["build_date"]);
-  if (b(build["img_to_base64"]) !== undefined) out.img_to_base64 = b(build["img_to_base64"]);
-  if (typeof build["img_max_width"] === "number" && (build["img_max_width"] as number) > 0) out.img_max_width = build["img_max_width"] as number;
-  if (typeof build["img_compress"] === "number") out.img_compress = Math.max(1, Math.min(100, build["img_compress"] as number));
-  if (b(build["code_highlight"]) !== undefined) out.code_highlight = b(build["code_highlight"])!;
-  if (b(build["code_copy"]) !== undefined) out.code_copy = b(build["code_copy"])!;
-  if (s(build["code_highlight_theme"])) out.code_highlight_theme = s(build["code_highlight_theme"]);
-  if (s(build["code_highlight_theme_light"])) out.code_highlight_theme_light = s(build["code_highlight_theme_light"]);
 
   if (s(site["title"])) out.site_title = s(site["title"]);
   if (s(site["theme_mode"])) out.theme_mode = s(site["theme_mode"]) as Config["theme_mode"];
@@ -101,6 +93,21 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   if (s(i18n["locale"])) out.locale = s(i18n["locale"]);
   if (b(i18n["mode"]) !== undefined) out.i18n_mode = b(i18n["mode"]);
   if (s(i18n["default_locale"])) out.default_locale = s(i18n["default_locale"]);
+
+  const copy = (plugins["copy"] ?? {}) as Record<string, unknown>;
+  const highlight = (plugins["highlight"] ?? {}) as Record<string, unknown>;
+  const image = (plugins["image"] ?? {}) as Record<string, unknown>;
+  if (b(copy["enable"]) !== undefined) out.code_copy = b(copy["enable"])!;
+  if (b(highlight["enable"]) !== undefined) out.code_highlight = b(highlight["enable"])!;
+  if (s(highlight["theme"])) out.code_highlight_theme = s(highlight["theme"]);
+  if (s(highlight["theme_light"])) out.code_highlight_theme_light = s(highlight["theme_light"]);
+  if (b(image["base64_embed"]) !== undefined) out.img_to_base64 = b(image["base64_embed"])!;
+  if (typeof image["max_width"] === "number" && (image["max_width"] as number) > 0) {
+    out.img_max_width = image["max_width"] as number;
+  }
+  if (typeof image["compress"] === "number") {
+    out.img_compress = Math.max(1, Math.min(100, image["compress"] as number));
+  }
 
   return out;
 }
@@ -126,7 +133,9 @@ export async function loadConfigFile(configPath?: string): Promise<Partial<Confi
   const target = configPath ?? path.join(process.cwd(), "config.toml");
   if (!fs.existsSync(target)) return {};
   try {
-    const raw = fs.readFileSync(target, "utf-8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    let raw = fs.readFileSync(target, "utf-8");
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+    raw = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const parsed = await parseTOML(raw);
     return tomlToConfig(parsed);
   } catch (e) {

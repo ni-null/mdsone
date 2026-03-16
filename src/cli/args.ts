@@ -66,7 +66,13 @@ EXAMPLES:
   npx mdsone ./docs --i18n-mode --i18n-default zh-TW
 
   # Image optimization
-  npx mdsone README.md -o index.html --img-to-base64 true --img-max-width 800 --img-compress 85
+  npx mdsone README.md -o index.html --img-base64-embed true --img-max-width 800 --img-compress 85
+
+  # Use a specific config.toml
+  npx mdsone --config ./config.toml
+
+  # Ignore config.toml (use CLI/env/default only)
+  npx mdsone --no-config
 
   # Overwrite protection: stop if output already exists
   npx mdsone README.md -o output.html -f false
@@ -77,16 +83,23 @@ CONFIGURATION PRIORITY:
 ENVIRONMENT VARIABLES:
   MARKDOWN_SOURCE_DIR    (fallback source when no inputs given)
   OUTPUT_FILE            (default: main.html)               → -o
+  TEMPLATES_DIR          (default: templates)               → --templates-dir
   DEFAULT_TEMPLATE       (default: normal)                  → --template
   SITE_TITLE             (default: Documentation)           → --site-title
   THEME_MODE             (default: light)                   → --theme-mode
+  MINIFY_HTML            (default: true)                    → --minify-html
+  BUILD_DATE             (auto-generated if not set)
+  MARKDOWN_EXTENSIONS    (comma-separated list)
   LOCALE                 (default: en)                      → --locale
   I18N_MODE              (default: false)                   → --i18n-mode
   DEFAULT_LOCALE         (default: empty)                   → --i18n-default
-  MINIFY_HTML            (default: true)                    → --minify-html
-  TEMPLATES_DIR          (default: templates)               → --templates-dir
-  LOCALES_DIR            (default: locales)                 → --locales-dir
-  BUILD_DATE             (auto-generated if not set)
+  IMG_TO_BASE64          (default: false)                   → --img-base64-embed
+  IMG_MAX_WIDTH          (default: 0)                       → --img-max-width
+  IMG_COMPRESS           (default: 0)                       → --img-compress
+  CODE_HIGHLIGHT         (default: true)                    → --code-highlight
+  CODE_COPY              (default: true)                    → --code-copy
+  CODE_HIGHLIGHT_THEME   (default: atom-one-dark)           → --code-highlight-theme
+  CODE_HIGHLIGHT_THEME_LIGHT (default: atom-one-light)      → --code-highlight-theme-light
 `;
 
 /**
@@ -107,7 +120,6 @@ export function parseArgs(argv?: string[]): CliArgs {
     .option("-f, --force <boolean>", "Overwrite existing output file (default: true)", "true")
     // Paths
     .option("--templates-dir <DIR>", "Templates directory (default: templates)")
-    .option("--locales-dir <DIR>", "Locales directory (default: locales)")
     // Templates & Styling
     .option("--template <NAME>", "Template name (normal, minimal; default: normal)")
     .option("--site-title <TEXT>", "Documentation site title (default: Documentation)")
@@ -117,8 +129,11 @@ export function parseArgs(argv?: string[]): CliArgs {
     .option("--locale <CODE>", "UI locale code (e.g., en, zh-TW; default: en)")
     .option("--i18n-mode", "Enable multi-language mode")
     .option("--i18n-default <CODE>", "Default locale in i18n mode")
+    // Config
+    .option("--config <PATH>", "Specify config.toml path")
+    .option("--no-config", "Ignore config.toml")
     // Image Processing
-    .option("--img-to-base64 <true|false>", "Embed images as base64 (default: false)")
+    .option("--img-base64-embed <true|false>", "Embed images as base64 (default: false)")
     .option("--img-max-width <pixels>", "Max image width in pixels (requires 'sharp' package)")
     .option("--img-compress <1-100>", "Image compression quality 1-100 (requires 'sharp' package)")
     // Code features
@@ -141,7 +156,9 @@ export function parseArgs(argv?: string[]): CliArgs {
     defaultLocale?: string;
     minifyHtml?: string;
     templatesDir?: string;
-    localesDir?: string;
+    config?: string;
+    configPath?: string;
+    noConfig?: boolean;
     imgToBase64?: string;
     imgMaxWidth?: string;
     imgCompress?: string;
@@ -167,7 +184,8 @@ export function parseArgs(argv?: string[]): CliArgs {
     defaultLocale: opts.defaultLocale,
     minifyHtml: opts.minifyHtml,
     templatesDir: opts.templatesDir,
-    localesDir: opts.localesDir,
+    configPath: opts.config,
+    noConfig: opts.noConfig,
     imgToBase64: opts.imgToBase64,
     imgMaxWidth: opts.imgMaxWidth,
     imgCompress: opts.imgCompress,
@@ -178,3 +196,4 @@ export function parseArgs(argv?: string[]): CliArgs {
     version: opts.version,
   };
 }
+

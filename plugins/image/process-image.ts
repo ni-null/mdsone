@@ -1,5 +1,5 @@
 // ============================================================
-// plugins/image-embed/process-image.ts — 圖片 resize / compress
+// plugins/image/process-image.ts — 圖片 resize / compress
 // 使用 sharp（選用依賴），未安裝時原樣回傳
 // 從 src/adapters/node/fs.ts 移出
 // ============================================================

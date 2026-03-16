@@ -62,7 +62,11 @@ async function main(): Promise<void> {
 
   // ② 載入 .env + config.toml，合併設定（CLI > env > toml > default）
   loadEnvFile();
-  const toml = await loadConfigFile();
+  let toml = {};
+  if (!args.noConfig) {
+    const cfgPath = args.configPath ? path.resolve(process.cwd(), args.configPath) : undefined;
+    toml = await loadConfigFile(cfgPath);
+  }
   let config: Config = buildConfig(toml, cliOverride);
 
   // ②-b 將相對路徑的 templates_dir / locales_dir 以 packageRoot 為基準解析

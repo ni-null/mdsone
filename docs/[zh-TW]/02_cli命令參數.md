@@ -16,13 +16,15 @@ mdsone <inputs...> [-m] [-o output_path] [-f <boolean>] [options]
 | `-f, --force <boolean>` | 覆蓋模式開關（預設 `true`） | `-f false` |
 | `--template NAME` | 模板名稱 | `--template minimal` |
 | `--locale CODE` | 語系代碼（單語模式） | `--locale zh-TW` |
-| `--img-to-base64 true\|false` | 將圖片嵌入為 base64（本地+遠端） | `--img-to-base64 true` |
+| `--img-base64-embed true\|false` | 將圖片嵌入為 base64（本地+遠端） | `--img-base64-embed true` |
 | `--img-max-width PIXELS` | 限制圖片最大寬度（需要 sharp） | `--img-max-width 400` |
 | `--img-compress QUALITY` | 圖片壓縮品質 1-100（需要 sharp） | `--img-compress 80` |
 | `--code-highlight enable\|disable` | 語法高亮（預設 enable） | `--code-highlight disable` |
 | `--code-copy enable\|disable` | 程式碼複製按鈕（預設 enable） | `--code-copy disable` |
 | `--code-highlight-theme NAME` | highlight.js 深色主題名稱 | `--code-highlight-theme github-dark` |
 | `--code-highlight-theme-light NAME` | highlight.js 淺色主題名稱 | `--code-highlight-theme-light github` |
+| `--config PATH` | 指定 config.toml 路徑 | `--config ./config.toml` |
+| `--no-config` | 忽略 config.toml | `--no-config` |
 
 ## 兩種運作模式
 
@@ -139,10 +141,9 @@ output_file = "./dist/index.html"
 
 [build]
 default_template = "normal"
-img_to_base64 = true
-img_max_width = 600
-img_compress = 90
 
+[plugins]
+image = { base64_embed = true, max_width = 600, compress = 90 }
 ```
 
 ### 4. 預設值
@@ -155,6 +156,7 @@ img_compress = 90
 |------|-----|---------|-------------|
 | Markdown 來源 | `<inputs...>` | `MARKDOWN_SOURCE_DIR` | `[paths] source` |
 | 輸出路徑 | `-o, --output` | `OUTPUT_FILE` | `[paths] output_file` |
+| 模板目錄 | — | `TEMPLATES_DIR` | `[paths] templates_dir` |
 | 合併模式 | `-m, --merge` | — | — |
 | 模板 | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template` |
 | 語系 | `--locale` | `LOCALE` | `[i18n] locale` |
@@ -162,13 +164,14 @@ img_compress = 90
 | 主題 | `--theme-mode` | `THEME_MODE` | `[site] theme_mode` |
 | 壓縮 HTML | `--minify-html` | `MINIFY_HTML` | `[build] minify_html` |
 | 建置日期 | — | `BUILD_DATE` | `[build] build_date` |
-| 圖片 base64 嵌入 | `--img-to-base64` | `IMG_TO_BASE64` | `[build] img_to_base64` |
-| 圖片最大寬度 | `--img-max-width` | `IMG_MAX_WIDTH` | `[build] img_max_width` |
-| 圖片壓縮品質 | `--img-compress` | `IMG_COMPRESS` | `[build] img_compress` |
-| 語法高亮 | `--code-highlight` | `CODE_HIGHLIGHT` | `[build] code_highlight` |
-| 複製按鈕 | `--code-copy` | `CODE_COPY` | `[build] code_copy` |
-| 高亮深色主題 | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[build] code_highlight_theme` |
-| 高亮淺色主題 | `--code-highlight-theme-light` | `CODE_HIGHLIGHT_THEME_LIGHT` | `[build] code_highlight_theme_light` |
+| Markdown 擴充 | — | `MARKDOWN_EXTENSIONS` | `[build] markdown_extensions` |
+| 圖片 base64 嵌入 | `--img-base64-embed` | `IMG_TO_BASE64` | `[plugins.image] base64_embed` |
+| 圖片最大寬度 | `--img-max-width` | `IMG_MAX_WIDTH` | `[plugins.image] max_width` |
+| 圖片壓縮品質 | `--img-compress` | `IMG_COMPRESS` | `[plugins.image] compress` |
+| 語法高亮 | `--code-highlight` | `CODE_HIGHLIGHT` | `[plugins.highlight] enable` |
+| 複製按鈕 | `--code-copy` | `CODE_COPY` | `[plugins.copy] enable` |
+| 高亮深色主題 | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[plugins.highlight] theme` |
+| 高亮淺色主題 | `--code-highlight-theme-light` | `CODE_HIGHLIGHT_THEME_LIGHT` | `[plugins.highlight] theme_light` |
 
 ## 使用範例
 
@@ -203,10 +206,10 @@ npx mdsone ./docs -m
 npx mdsone ./docs -m -o dist/manual.html --template normal
 
 # 嵌入圖片為 base64
-npx mdsone ./docs -m -o dist/index.html --img-to-base64 true
+npx mdsone ./docs -m -o dist/index.html --img-base64-embed true
 
 # 嵌入圖片並 resize + 壓縮（需要 sharp）
-npx mdsone ./docs -m -o dist/index.html --img-to-base64 true --img-max-width 600 --img-compress 90
+npx mdsone ./docs -m -o dist/index.html --img-base64-embed true --img-max-width 600 --img-compress 90
 
 # 禁用語法高亮和複製按鈕
 npx mdsone ./docs -m -o dist/index.html --code-highlight disable --code-copy disable
@@ -214,3 +217,5 @@ npx mdsone ./docs -m -o dist/index.html --code-highlight disable --code-copy dis
 # 覆蓋保護
 npx mdsone README.md -o output.html -f false
 ```
+
+

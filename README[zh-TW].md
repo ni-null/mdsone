@@ -1,4 +1,4 @@
-# mdsone — Markdown 轉自包含式 HTML
+﻿# mdsone — Markdown 轉自包含式 HTML
 
 mdsone 是一款 Markdown 轉換工具，可將 Markdown 文件轉換為功能完整的自包含式 HTML 檔案。
 
@@ -44,9 +44,11 @@ npx mdsone ./docs -m -o manual.html
 含圖片嵌入：
 
 ```bash
-npx mdsone README.md -o index.html --img-to-base64 --img-max-width 400
+npx mdsone README.md -o index.html --img-base64-embed --img-max-width 400
 ```
 
 ## 授權條款
 
 [MIT](./LICENSE)
+
+

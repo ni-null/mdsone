@@ -1,4 +1,4 @@
-﻿# CLI Arguments
+# CLI Arguments
 
 ## Syntax
 
@@ -17,13 +17,15 @@ mdsone <inputs...> [-m] [-o output_path] [-f <boolean>] [options]
 | `--template NAME` | Template name | `--template minimal` |
 | `--locale CODE` | Locale code (single-language mode) | `--locale en` |
 | `--i18n-mode` | Enable multi-language mode (boolean flag, automatically triggers merge) | `--i18n-mode` |
-| `--img-to-base64 true\|false` | Embed images as base64 (local + remote) | `--img-to-base64 true` |
+| `--img-base64-embed true\|false` | Embed images as base64 (local + remote) | `--img-base64-embed true` |
 | `--img-max-width PIXELS` | Limit maximum image width (requires sharp) | `--img-max-width 400` |
 | `--img-compress QUALITY` | Image compression quality 1–100 (requires sharp) | `--img-compress 80` |
 | `--code-highlight enable\|disable` | Syntax highlighting (default: enable) | `--code-highlight disable` |
 | `--code-copy enable\|disable` | Code copy button (default: enable) | `--code-copy disable` |
 | `--code-highlight-theme NAME` | highlight.js dark theme name | `--code-highlight-theme github-dark` |
 | `--code-highlight-theme-light NAME` | highlight.js light theme name | `--code-highlight-theme-light github` |
+| `--config PATH` | Specify config.toml path | `--config ./config.toml` |
+| `--no-config` | Ignore config.toml | `--no-config` |
 
 ## Two Operating Modes
 
@@ -147,9 +149,9 @@ output_file = "./dist/index.html"
 
 [build]
 default_template = "normal"
-img_to_base64 = true
-img_max_width = 600
-img_compress = 90
+
+[plugins]
+image = { base64_embed = true, max_width = 600, compress = 90 }
 
 [i18n]
 mode = true
@@ -172,6 +174,7 @@ If none of the above are configured, built-in default values are used.
 |---------|-----|---------------------|-------------|
 | Markdown source | `<inputs...>` | `MARKDOWN_SOURCE_DIR` | `[paths] source` |
 | Output path | `-o, --output` | `OUTPUT_FILE` | `[paths] output_file` |
+| Templates dir | — | `TEMPLATES_DIR` | `[paths] templates_dir` |
 | Merge mode | `-m, --merge` | — | — |
 | Template | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template` |
 | Locale | `--locale` | `LOCALE` | `[i18n] locale` |
@@ -181,13 +184,14 @@ If none of the above are configured, built-in default values are used.
 | Theme | `--theme-mode` | `THEME_MODE` | `[site] theme_mode` |
 | Minify HTML | `--minify-html` | `MINIFY_HTML` | `[build] minify_html` |
 | Build date | — | `BUILD_DATE` | `[build] build_date` |
-| Image base64 embed | `--img-to-base64` | `IMG_TO_BASE64` | `[build] img_to_base64` |
-| Image max width | `--img-max-width` | `IMG_MAX_WIDTH` | `[build] img_max_width` |
-| Image compression quality | `--img-compress` | `IMG_COMPRESS` | `[build] img_compress` |
-| Syntax highlighting | `--code-highlight` | `CODE_HIGHLIGHT` | `[build] code_highlight` |
-| Copy button | `--code-copy` | `CODE_COPY` | `[build] code_copy` |
-| Dark highlight theme | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[build] code_highlight_theme` |
-| Light highlight theme | `--code-highlight-theme-light` | `CODE_HIGHLIGHT_THEME_LIGHT` | `[build] code_highlight_theme_light` |
+| Markdown extensions | — | `MARKDOWN_EXTENSIONS` | `[build] markdown_extensions` |
+| Image base64 embed | `--img-base64-embed` | `IMG_TO_BASE64` | `[plugins.image] base64_embed` |
+| Image max width | `--img-max-width` | `IMG_MAX_WIDTH` | `[plugins.image] max_width` |
+| Image compression quality | `--img-compress` | `IMG_COMPRESS` | `[plugins.image] compress` |
+| Syntax highlighting | `--code-highlight` | `CODE_HIGHLIGHT` | `[plugins.highlight] enable` |
+| Copy button | `--code-copy` | `CODE_COPY` | `[plugins.copy] enable` |
+| Dark highlight theme | `--code-highlight-theme` | `CODE_HIGHLIGHT_THEME` | `[plugins.highlight] theme` |
+| Light highlight theme | `--code-highlight-theme-light` | `CODE_HIGHLIGHT_THEME_LIGHT` | `[plugins.highlight] theme_light` |
 
 ## Usage Examples
 
@@ -225,10 +229,10 @@ npx mdsone ./docs -m -o dist/manual.html --template normal
 npx mdsone ./docs --i18n-mode --i18n-default en -o dist/index.html
 
 # Embed images as base64
-npx mdsone ./docs -m -o dist/index.html --img-to-base64 true
+npx mdsone ./docs -m -o dist/index.html --img-base64-embed true
 
 # Embed images with resize + compression (requires sharp)
-npx mdsone ./docs -m -o dist/index.html --img-to-base64 true --img-max-width 600 --img-compress 90
+npx mdsone ./docs -m -o dist/index.html --img-base64-embed true --img-max-width 600 --img-compress 90
 
 # Disable syntax highlighting and copy button
 npx mdsone ./docs -m -o dist/index.html --code-highlight disable --code-copy disable
@@ -236,3 +240,5 @@ npx mdsone ./docs -m -o dist/index.html --code-highlight disable --code-copy dis
 # Overwrite protection
 npx mdsone README.md -o output.html -f false
 ```
+
+

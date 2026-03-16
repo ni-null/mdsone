@@ -1,5 +1,5 @@
 // ============================================================
-// plugins/image-embed/index.ts — 圖片嵌入 base64 Plugin
+// plugins/image/index.ts — 圖片嵌入 base64 Plugin
 //
 // 將 HTML 中的 <img src="..."> 轉換為 base64 data URL：
 //   - 本地路徑（相對 / 絕對）：讀取檔案
@@ -61,7 +61,7 @@ async function embedImagesInHtml(
 }
 
 export const imageEmbedPlugin: Plugin = {
-    name: "image-embed",
+    name: "image",
 
     isEnabled: (config) => config.img_to_base64,
 

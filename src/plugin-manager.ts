@@ -6,11 +6,11 @@
 import type { Config, Plugin, PluginContext } from "./core/types.js";
 import { highlightPlugin } from "../plugins/highlight/index.js";
 import { copyPlugin } from "../plugins/copy/index.js";
-import { imageEmbedPlugin } from "../plugins/image-embed/index.js";
+import { imageEmbedPlugin } from "../plugins/image/index.js";
 
 /**
  * 內建 plugin 清單（順序即執行順序）。
- * image-embed 必須在 highlight 之前，因為會修改 img 標籤結構。
+ * image 必須在 highlight 之前，因為會修改 img 標籤結構。
  */
 const builtInPlugins: Plugin[] = [
     imageEmbedPlugin,

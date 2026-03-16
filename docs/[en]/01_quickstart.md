@@ -1,4 +1,4 @@
-﻿# Quick Start
+# Quick Start
 
 ## Installation
 
@@ -59,13 +59,13 @@ npx mdsone ./docs -m -o manual.html
 
 ```bash
 # Embed images as base64
-npx mdsone README.md -o index.html --img-to-base64 true
+npx mdsone README.md -o index.html --img-base64-embed true
 
 # Embed images with max width
-npx mdsone README.md -o index.html --img-to-base64 true --img-max-width 400
+npx mdsone README.md -o index.html --img-base64-embed true --img-max-width 400
 
 # Embed images with compression (requires sharp)
-npx mdsone README.md -o index.html --img-to-base64 true --img-max-width 400 --img-compress 80
+npx mdsone README.md -o index.html --img-base64-embed true --img-max-width 400 --img-compress 80
 ```
 
 ### Template and Locale
@@ -114,3 +114,5 @@ npx mdsone ./docs -m -o index.html --i18n-mode --i18n-default en
 ```text
 CLI arguments > Environment variables > config.toml > Default values
 ```
+
+
