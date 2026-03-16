@@ -20,19 +20,27 @@ Single Markdown file:
 npx mdsone README.md
 ```
 
-Specify output filename:
+Specify output:
 ```bash
-npx mdsone README.md output.html
+npx mdsone README.md -o index.html
 ```
 
-Full directory:
+Multiple Markdown files (batch mode):
 ```bash
-npx mdsone ./docs
+npx mdsone ./docs -o ./dist
+```
+
+Merge multiple files into a single HTML:
+```bash
+npx mdsone intro.md guide.md -m -o manual.html
+
+# Or merge entire folder
+npx mdsone ./docs -m -o manual.html
 ```
 
 With image embedding:
 ```bash
-npx mdsone README.md --img-to-base64 --img-max-width 400
+npx mdsone README.md -o index.html --img-to-base64 --img-max-width 400
 ```
 
 ## License

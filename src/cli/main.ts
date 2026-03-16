@@ -20,7 +20,6 @@ import {
   scanLocaleSubDirs,
   scanTemplates,
   loadTemplateFiles,
-  loadLibFiles,
   loadLocaleFile,
   loadTemplateLocaleFile,
   readTextFile,
@@ -29,8 +28,8 @@ import {
   fileExists,
   dirExists,
   isMdFile,
-  embedImagesInHtml,
 } from "../adapters/node/fs.js";
+import { PluginManager } from "../plugin-manager.js";
 import type { Config } from "../core/types.js";
 
 /**
@@ -96,7 +95,7 @@ async function main(): Promise<void> {
 
   // ④-b 分類：檔案 vs 資料夾
   const inputFiles = inputs.filter((p) => fileExists(p));
-  const inputDirs  = inputs.filter((p) => dirExists(p));
+  const inputDirs = inputs.filter((p) => dirExists(p));
 
   if (inputFiles.length > 0 && inputDirs.length > 0) {
     console.error("[Error] Mixed input (files and directories) is not supported. Please provide either a list of files OR a single directory.");
@@ -110,8 +109,8 @@ async function main(): Promise<void> {
 
   // ⑤ 決定模式
   const isSingleFile = inputFiles.length === 1 && isMdFile(inputFiles[0]);
-  const isMultiFile  = inputFiles.length > 1;
-  const isFolder     = inputDirs.length === 1;
+  const isMultiFile = inputFiles.length > 1;
+  const isFolder = inputDirs.length === 1;
 
   // ⑤-a 檢查檔案類型：所有檔案輸入必須是 markdown
   if (inputFiles.length > 0) {
@@ -143,7 +142,7 @@ async function main(): Promise<void> {
   // ⑥ 解析輸出路徑
   const force = args.force !== "false";
   let outputFile = "";     // 合併模式的最終輸出檔案
-  let outputDir  = "";     // 批次模式的輸出目錄
+  let outputDir = "";     // 批次模式的輸出目錄
 
   if (mergeMode) {
     // ── 合併模式：輸出必為單一 HTML 檔案 ──
@@ -249,9 +248,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // ⑪-b 載入 lib/ 檔案（依 config 旗標決定是否注入 highlight / copy）
-  const libDir = path.resolve(packageRoot, "lib");
-  const { css: libCss, js: libJs } = await loadLibFiles(libDir, config);
+  // ⑪-b 透過 PluginManager 收集 highlight / copy 靜態資源
+  const pluginManager = new PluginManager();
+  const { css: libCss, js: libJs } = await pluginManager.getAssets(config);
 
   // ⑫ 讀取 Markdown 並轉換，準備 buildHtml 所需參數
   if (isSingleFile) {
@@ -266,13 +265,7 @@ async function main(): Promise<void> {
 
       const documents: Record<string, string> = {};
       let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight, 0);
-      if (config.img_to_base64) {
-        const baseDir = path.dirname(srcFile);
-        html = await embedImagesInHtml(html, baseDir, {
-          maxWidth: config.img_max_width || undefined,
-          compress: config.img_compress || undefined,
-        });
-      }
+      html = await pluginManager.processHtml(html, config, { sourceDir: path.dirname(srcFile) });
       documents["index"] = html;
 
       const globalLocale = await loadLocaleFile(config.locales_dir, config.locale || "en");
@@ -300,12 +293,7 @@ async function main(): Promise<void> {
           const content = await readTextFile(filepath);
           if (content.trim()) {
             let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, i);
-            if (config.img_to_base64) {
-              html = await embedImagesInHtml(html, path.dirname(filepath), {
-                maxWidth: config.img_max_width || undefined,
-                compress: config.img_compress || undefined,
-              });
-            }
+            html = await pluginManager.processHtml(html, config, { sourceDir: path.dirname(filepath) });
             documents[tabName] = html;
           }
         } catch (e) {
@@ -347,12 +335,7 @@ async function main(): Promise<void> {
             const content = await readTextFile(filepath);
             if (content.trim()) {
               let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
-              if (config.img_to_base64) {
-                html = await embedImagesInHtml(html, dir, {
-                  maxWidth: config.img_max_width || undefined,
-                  compress: config.img_compress || undefined,
-                });
-              }
+              html = await pluginManager.processHtml(html, config, { sourceDir: dir });
               localeDocs[tabName] = html;
             }
           } catch (e) {
@@ -399,12 +382,7 @@ async function main(): Promise<void> {
           const content = await readTextFile(filepath);
           if (content.trim()) {
             let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
-            if (config.img_to_base64) {
-              html = await embedImagesInHtml(html, folderPath, {
-                maxWidth: config.img_max_width || undefined,
-                compress: config.img_compress || undefined,
-              });
-            }
+            html = await pluginManager.processHtml(html, config, { sourceDir: folderPath });
             documents[tabName] = html;
           }
         } catch (e) {
@@ -482,12 +460,7 @@ async function main(): Promise<void> {
           continue;
         }
         let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, 0);
-        if (config.img_to_base64) {
-          html = await embedImagesInHtml(html, baseDir, {
-            maxWidth: config.img_max_width || undefined,
-            compress: config.img_compress || undefined,
-          });
-        }
+        html = await pluginManager.processHtml(html, config, { sourceDir: baseDir });
         const documents: Record<string, string> = { index: html };
         // 每個批次檔案有自己的 config.output_file（供 template 使用）
         const batchConfig = { ...config, output_file: targetFile };
