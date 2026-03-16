@@ -1,4 +1,4 @@
-# Quick Start
+﻿# Quick Start
 
 ## Installation
 
@@ -106,7 +106,7 @@ docs/
 Run with `--i18n-mode` flag:
 
 ```bash
-npx mdsone ./docs -m -o index.html --i18n-mode --default-locale en
+npx mdsone ./docs -m -o index.html --i18n-mode --i18n-default en
 ```
 
 ## Priority Order

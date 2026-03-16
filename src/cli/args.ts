@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // src/cli/args.ts — CLI 引數解析（commander）
 // ============================================================
 
@@ -63,7 +63,7 @@ EXAMPLES:
   npx mdsone ./markdown --template minimal --locale zh-TW
 
   # Multi-language folder (i18n mode requires single folder)
-  npx mdsone ./docs --i18n-mode --default-locale zh-TW
+  npx mdsone ./docs --i18n-mode --i18n-default zh-TW
 
   # Image optimization
   npx mdsone README.md -o index.html --img-to-base64 true --img-max-width 800 --img-compress 85
@@ -82,11 +82,10 @@ ENVIRONMENT VARIABLES:
   THEME_MODE             (default: light)                   → --theme-mode
   LOCALE                 (default: en)                      → --locale
   I18N_MODE              (default: false)                   → --i18n-mode
-  DEFAULT_LOCALE         (default: empty)                   → --default-locale
+  DEFAULT_LOCALE         (default: empty)                   → --i18n-default
   MINIFY_HTML            (default: true)                    → --minify-html
   TEMPLATES_DIR          (default: templates)               → --templates-dir
   LOCALES_DIR            (default: locales)                 → --locales-dir
-  TEMPLATE_CONFIG_FILE   (default: template.config.json)
   BUILD_DATE             (auto-generated if not set)
 `;
 
@@ -117,7 +116,7 @@ export function parseArgs(argv?: string[]): CliArgs {
     // Internationalization
     .option("--locale <CODE>", "UI locale code (e.g., en, zh-TW; default: en)")
     .option("--i18n-mode", "Enable multi-language mode")
-    .option("--default-locale <CODE>", "Default locale in i18n mode")
+    .option("--i18n-default <CODE>", "Default locale in i18n mode")
     // Image Processing
     .option("--img-to-base64 <true|false>", "Embed images as base64 (default: false)")
     .option("--img-max-width <pixels>", "Max image width in pixels (requires 'sharp' package)")

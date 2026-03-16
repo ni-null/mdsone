@@ -16,7 +16,6 @@ mdsone <inputs...> [-m] [-o output_path] [-f <boolean>] [options]
 | `-f, --force <boolean>` | 覆蓋模式開關（預設 `true`） | `-f false` |
 | `--template NAME` | 模板名稱 | `--template minimal` |
 | `--locale CODE` | 語系代碼（單語模式） | `--locale zh-TW` |
-| `--i18n-mode` | 啟用多語言模式（布林旗標，自動啟動合併） | `--i18n-mode` |
 | `--img-to-base64 true\|false` | 將圖片嵌入為 base64（本地+遠端） | `--img-to-base64 true` |
 | `--img-max-width PIXELS` | 限制圖片最大寬度（需要 sharp） | `--img-max-width 400` |
 | `--img-compress QUALITY` | 圖片壓縮品質 1-100（需要 sharp） | `--img-compress 80` |
@@ -84,14 +83,9 @@ mdsone ./docs -m -o dist/manual.html
 
 > 不支援「檔案與資料夾混合輸入」。
 
-## 多語言模式 (`--i18n-mode`)
+## 多國語言
 
-`--i18n-mode` 為布林旗標，加上即啟用，**不需要**輸入 `true`/`false`。  
-啟用後自動走合併邏輯。輸入資料夾必須含有 `[locale]` 子目錄（如 `[en]`、`[zh-TW]`）。
-
-```bash
-mdsone ./docs --i18n-mode --default-locale zh-TW -o dist/index.html
-```
+多國語言的檔案結構、參數與預設值已統一收錄在 `04_多國語言.md`。
 
 ## 覆蓋保護 (`-f`)
 
@@ -113,7 +107,7 @@ npx mdsone README.md -o output.html -f false
 ### 1. CLI 參數（最高優先）
 
 ```bash
-npx mdsone ./docs -o ./dist/index.html --i18n-mode
+npx mdsone ./docs -o ./dist/index.html --template normal
 ```
 
 ### 2. 環境變數
@@ -121,7 +115,6 @@ npx mdsone ./docs -o ./dist/index.html --i18n-mode
 ```bash
 export MARKDOWN_SOURCE_DIR="./docs"
 export OUTPUT_FILE="./dist/index.html"
-export I18N_MODE="true"
 npx mdsone
 ```
 
@@ -131,7 +124,6 @@ npx mdsone
 env:
   MARKDOWN_SOURCE_DIR: "./docs"
   OUTPUT_FILE: "./dist/index.html"
-  I18N_MODE: "true"
   SITE_TITLE: "My Documentation"
 steps:
   - run: npm ci
@@ -151,15 +143,6 @@ img_to_base64 = true
 img_max_width = 600
 img_compress = 90
 
-[i18n]
-mode = true
-default_locale = "zh-TW"
-```
-
-```bash
-npx mdsone
-# 本地開發時也可以用
-npm start
 ```
 
 ### 4. 預設值
@@ -175,8 +158,6 @@ npm start
 | 合併模式 | `-m, --merge` | — | — |
 | 模板 | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template` |
 | 語系 | `--locale` | `LOCALE` | `[i18n] locale` |
-| 多語言模式 | `--i18n-mode` | `I18N_MODE` | `[i18n] mode` |
-| 預設語系 | `--default-locale` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
 | 頁面標題 | `--site-title` | `SITE_TITLE` | `[site] title` |
 | 主題 | `--theme-mode` | `THEME_MODE` | `[site] theme_mode` |
 | 壓縮 HTML | `--minify-html` | `MINIFY_HTML` | `[build] minify_html` |
@@ -220,9 +201,6 @@ npx mdsone ./docs -m
 
 # 資料夾合併，指定輸出路徑
 npx mdsone ./docs -m -o dist/manual.html --template normal
-
-# 多語言模式（自動走合併邏輯）
-npx mdsone ./docs --i18n-mode --default-locale zh-TW -o dist/index.html
 
 # 嵌入圖片為 base64
 npx mdsone ./docs -m -o dist/index.html --img-to-base64 true

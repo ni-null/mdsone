@@ -1,4 +1,4 @@
-# CLI Arguments
+﻿# CLI Arguments
 
 ## Syntax
 
@@ -90,7 +90,7 @@ mdsone ./docs -m -o dist/manual.html
 When enabled, merge logic is automatically applied. The input folder must contain `[locale]` subdirectories (e.g. `[en]`, `[zh-TW]`).
 
 ```bash
-mdsone ./docs --i18n-mode --default-locale en -o dist/index.html
+mdsone ./docs --i18n-mode --i18n-default en -o dist/index.html
 ```
 
 ## Overwrite Protection (`-f`)
@@ -176,7 +176,7 @@ If none of the above are configured, built-in default values are used.
 | Template | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template` |
 | Locale | `--locale` | `LOCALE` | `[i18n] locale` |
 | Multi-language mode | `--i18n-mode` | `I18N_MODE` | `[i18n] mode` |
-| Default locale | `--default-locale` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
+| Default locale | `--i18n-default` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
 | Page title | `--site-title` | `SITE_TITLE` | `[site] title` |
 | Theme | `--theme-mode` | `THEME_MODE` | `[site] theme_mode` |
 | Minify HTML | `--minify-html` | `MINIFY_HTML` | `[build] minify_html` |
@@ -222,7 +222,7 @@ npx mdsone ./docs -m
 npx mdsone ./docs -m -o dist/manual.html --template normal
 
 # Multi-language mode (automatically applies merge logic)
-npx mdsone ./docs --i18n-mode --default-locale en -o dist/index.html
+npx mdsone ./docs --i18n-mode --i18n-default en -o dist/index.html
 
 # Embed images as base64
 npx mdsone ./docs -m -o dist/index.html --img-to-base64 true

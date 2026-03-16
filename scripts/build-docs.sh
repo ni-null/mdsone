@@ -33,7 +33,7 @@ npx mdsone \
   --output ./docs-dist/index.html \
   --template normal \
   --i18n-mode true \
-  --default-locale zh-TW \
+  --i18n-default zh-TW \
   --locale zh-TW \
   --site-title "MDSone Documentation" \
   --theme-mode light

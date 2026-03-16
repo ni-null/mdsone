@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 
 import { execSync } from 'child_process';
 import { mkdirSync } from 'fs';
@@ -25,7 +25,7 @@ mkdirSync('docs-dist', { recursive: true });
 // Build multi-language combined documentation (i18n mode)
 // This will automatically detect [en] and [zh-TW] subdirectories
 run(
-  'npx mdsone --source ./docs --output ./docs-dist/index.html --template normal --i18n-mode true --default-locale zh-TW --site-title "MDSone Documentation" --theme-mode light',
+  'npx mdsone --source ./docs --output ./docs-dist/index.html --template normal --i18n-mode true --i18n-default zh-TW --site-title "MDSone Documentation" --theme-mode light',
   '🌐 Building multi-language documentation (i18n mode)...'
 );
 

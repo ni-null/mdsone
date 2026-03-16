@@ -42,7 +42,6 @@ export function envToConfig(): Partial<Config> {
   if (e["TEMPLATES_DIR"]) out.templates_dir = e["TEMPLATES_DIR"];
   if (e["LOCALES_DIR"]) out.locales_dir = e["LOCALES_DIR"];
   if (e["DEFAULT_TEMPLATE"]) out.default_template = e["DEFAULT_TEMPLATE"];
-  if (e["TEMPLATE_CONFIG_FILE"]) out.template_config_file = e["TEMPLATE_CONFIG_FILE"];
   if (e["BUILD_DATE"]) out.build_date = e["BUILD_DATE"];
   if (e["SITE_TITLE"]) out.site_title = e["SITE_TITLE"];
   if (e["THEME_MODE"]) out.theme_mode = e["THEME_MODE"] as Config["theme_mode"];
@@ -87,7 +86,6 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   if (s(build["default_template"])) out.default_template = s(build["default_template"]);
   if (b(build["minify_html"]) !== undefined) out.minify_html = b(build["minify_html"]);
   if (l(build["markdown_extensions"])) out.markdown_extensions = l(build["markdown_extensions"]);
-  if (s(build["template_config_file"])) out.template_config_file = s(build["template_config_file"]);
   if (s(build["build_date"])) out.build_date = s(build["build_date"]);
   if (b(build["img_to_base64"]) !== undefined) out.img_to_base64 = b(build["img_to_base64"]);
   if (typeof build["img_max_width"] === "number" && (build["img_max_width"] as number) > 0) out.img_max_width = build["img_max_width"] as number;

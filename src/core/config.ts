@@ -16,7 +16,6 @@ export const DEFAULT_CONFIG: Config = {
   default_template: "normal",
   minify_html: true,
   markdown_extensions: ["tables", "fenced_code", "nl2br", "sane_lists", "attr_list"],
-  template_config_file: "template.config.json",
   build_date: "",
   // site
   site_title: "Documentation",
@@ -101,5 +100,4 @@ export function cliArgsToConfig(args: CliArgs): Partial<Config> {
   if (args.codeHighlightThemeLight) out.code_highlight_theme_light = args.codeHighlightThemeLight;
   return out;
 }
-
 

@@ -158,7 +158,6 @@ export async function loadTemplateLocaleFile(
 export async function loadTemplateFiles(
   templatesDir: string,
   templateName: string,
-  templateConfigFile: string,
 ): Promise<TemplateData> {
   const templateDir = path.join(templatesDir, templateName);
 
@@ -171,7 +170,7 @@ export async function loadTemplateFiles(
   let schema_version = "v1";
   let toc_config = { enabled: false, levels: [2, 3] };
 
-  const configPath = path.join(templateDir, templateConfigFile);
+  const configPath = path.join(templateDir, "template.config.json");
   if (fsSync.existsSync(configPath)) {
     try {
       const raw = JSON.parse(await readTextFile(configPath)) as Record<string, unknown>;

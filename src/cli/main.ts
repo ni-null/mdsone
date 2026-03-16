@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // src/cli/main.ts — CLI Orchestrator 
 // ============================================================
 
@@ -241,7 +241,6 @@ async function main(): Promise<void> {
     templateData = await loadTemplateFiles(
       config.templates_dir,
       templateName,
-      config.template_config_file,
     );
   } catch (e) {
     console.error(`[ERROR] Failed to load template: ${e}`);
@@ -485,8 +484,12 @@ async function main(): Promise<void> {
   const inputsStr = inputs.map((p) => `"${p}"`).join(" ");
   const parts = [`npx mdsone ${inputsStr}`];
   if (tpl !== "normal") parts.push(`--template ${tpl}`);
-  if (config.i18n_mode) parts.push(`--i18n-mode true`);
-  else if (config.locale !== "en") parts.push(`--locale ${config.locale}`);
+  if (config.i18n_mode) {
+    parts.push(`--i18n-mode`);
+    if (config.default_locale) parts.push(`--i18n-default ${config.default_locale}`);
+  } else if (config.locale !== "en") {
+    parts.push(`--locale ${config.locale}`);
+  }
   if (args.merge) parts.push(`-m`);
   if (args.output) {
     const outDisplay = mergeMode ? outputFile : outputDir;
@@ -524,4 +527,3 @@ main().catch((e) => {
   console.error(`[ERROR] Unexpected error: ${e}`);
   process.exit(1);
 });
-

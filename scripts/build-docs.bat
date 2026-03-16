@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM Build and generate multi-language documentation locally
 
 echo 🏗️  Building mdsone package...
@@ -34,7 +34,7 @@ call npx mdsone ^
   --output ./docs-dist/index.html ^
   --template normal ^
   --i18n-mode true ^
-  --default-locale zh-TW ^
+  --i18n-default zh-TW ^
   --locale zh-TW ^
   --site-title "MDSone Documentation" ^
   --theme-mode light

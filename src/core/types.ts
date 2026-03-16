@@ -14,7 +14,6 @@ export interface Config {
   default_template: string;
   minify_html: boolean;
   markdown_extensions: string[];
-  template_config_file: string;
   build_date: string;
   // site
   site_title: string;
