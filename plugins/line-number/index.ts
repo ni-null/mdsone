@@ -3,7 +3,12 @@
 // ============================================================
 
 import type { Plugin, PluginAssets } from "../../src/core/types.js";
-import { getLineNumberScript, getLineNumberStyle } from "./line-number.js";
+import { getLineNumberStyle } from "./line-number.js";
+import { load } from "cheerio";
+
+function trimTrailingEmpty(lines: string[]): string[] {
+  return lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
+}
 
 export const lineNumberPlugin: Plugin = {
   name: "line_number",
@@ -25,35 +30,38 @@ export const lineNumberPlugin: Plugin = {
 
   isEnabled: (config) => config.code_line_number === true,
 
-  getAssets(): PluginAssets {
-    const script = getLineNumberScript();
-    const css = `<style id="mdsone-line-number">\n${getLineNumberStyle()}\n</style>`;
-    const js =
-      `<script>\n` +
-      `try {\n` +
-      script +
-      `\n` +
-      `var __mdsone_ln_apply = function (root) { window.__mdsone_line_number(root) };\n` +
-      `if (document.readyState === 'loading') {\n` +
-      `  document.addEventListener('DOMContentLoaded', function () { __mdsone_ln_apply(document.body); });\n` +
-      `} else {\n` +
-      `  __mdsone_ln_apply(document.body);\n` +
-      `}\n` +
-      `if (typeof MutationObserver !== 'undefined') {\n` +
-      `  var obs = new MutationObserver(function (mutations) {\n` +
-      `    mutations.forEach(function (m) {\n` +
-      `      m.addedNodes && m.addedNodes.forEach(function (n) {\n` +
-      `        if (n && n.nodeType === 1) __mdsone_ln_apply(n);\n` +
-      `      });\n` +
-      `    });\n` +
-      `  });\n` +
-      `  obs.observe(document.body, { childList: true, subtree: true });\n` +
-      `}\n` +
-      `} catch(e) {\n` +
-      `  console.warn('[mdsone] Failed to load line numbers:', e.message);\n` +
-      `}\n` +
-      `</script>`;
+  processHtml(html) {
+    const $ = load(html, { decodeEntities: false }, false);
+    $("pre > code").each((_i, el) => {
+      const codeEl = $(el);
+      const preEl = codeEl.parent("pre");
+      if (!preEl.length) return;
 
-    return { css, js };
+      if (codeEl.find(".code-line").length > 0) {
+        codeEl.find(".code-line").each((idx, line) => {
+          const lineEl = $(line);
+          if (lineEl.find(".code-line-number").length > 0) return;
+          const content = lineEl.html() || "\u200b";
+          lineEl.html(
+            `<span class="code-line-number">${idx + 1}</span><span class="code-line-content">${content}</span>`,
+          );
+        });
+      } else {
+        const htmlLines = trimTrailingEmpty((codeEl.html() || "").split("\n"));
+        const wrapped = htmlLines.map((lineHtml, idx) =>
+          `<span class="code-line"><span class="code-line-number">${idx + 1}</span><span class="code-line-content">${lineHtml || "\u200b"}</span></span>`,
+        );
+        codeEl.html(wrapped.join(""));
+      }
+
+      preEl.addClass("mdsone-line-number");
+      preEl.attr("data-line-number-ready", "1");
+    });
+    return $.html() || html;
+  },
+
+  getAssets(): PluginAssets {
+    const css = `<style id="mdsone-line-number">\n${getLineNumberStyle()}\n</style>`;
+    return { css };
   },
 };

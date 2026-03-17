@@ -3,7 +3,6 @@
 // ============================================================
 
 import type { Plugin } from "../core/types.js";
-import { highlightPlugin } from "../../plugins/highlight/index.js";
 import { shikiPlugin } from "../../plugins/shiki/index.js";
 import { copyPlugin } from "../../plugins/copy/index.js";
 import { imageEmbedPlugin } from "../../plugins/image/index.js";
@@ -18,7 +17,3 @@ export const builtInPlugins: Plugin[] = [
   copyPlugin,
   lineNumberPlugin,
 ];
-
-if (process.env["MDSONE_ENABLE_LEGACY_HIGHLIGHT"] === "true") {
-  builtInPlugins.splice(1, 0, highlightPlugin);
-}

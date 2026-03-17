@@ -101,8 +101,6 @@ ENVIRONMENT VARIABLES:
   CODE_COPY              (default: true)                    → --code-copy
   CODE_LINE_COPY         (default: false)                   → --line-copy
   CODE_LINE_NUMBER       (default: false)                   → --code-line-number
-  CODE_HIGHLIGHT_THEME   (default: atom-one-dark)           → --code-highlight-theme
-  CODE_HIGHLIGHT_THEME_LIGHT (default: atom-one-light)      → --code-highlight-theme-light
 `;
 
 /**
