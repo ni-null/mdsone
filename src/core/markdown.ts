@@ -9,7 +9,7 @@ import MarkdownIt, { type Options as MarkdownItOptions } from "markdown-it";
 import markdownItAttrs from "markdown-it-attrs";
 // @ts-ignore — markdown-it-anchor 型別宣告不穩，直接忽略
 import markdownItAnchor from "markdown-it-anchor";
-import hljs from "highlight.js";
+import { codeToHtml } from "shiki";
 
 /** `[locale]` 目錄名稱的正則（例如 [en]、[zh-TW]） */
 export const LOCALE_DIR_PATTERN = /^\[(.+)\]$/;
@@ -105,7 +105,112 @@ function createMarkdownIt(extensions: string[], fileIndex: number): MarkdownIt {
  * @param codeHighlight - true 時在後端直接套用 highlight.js，輸出帶 span 的靜態 HTML。
  * @param fileIndex     - 合併多檔時的檔案順序索引（0-based），用於確保 heading id 跨檔唯一。
  */
-export function markdownToHtml(markdownText: string, extensions: string[], codeHighlight?: boolean, fileIndex = 0): string {
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function normalizeShikiLang(lang: string): string {
+  const v = lang.toLowerCase();
+  const aliases: Record<string, string> = {
+    "c#": "csharp",
+    "cs": "csharp",
+    "sh": "bash",
+    "shell": "bash",
+    "yml": "yaml",
+    "md": "markdown",
+    "py": "python",
+    "rb": "ruby",
+    "ps1": "powershell",
+    "bat": "batch",
+    "js": "javascript",
+    "ts": "typescript",
+    "tsx": "tsx",
+    "jsx": "jsx",
+  };
+  return aliases[v] ?? v;
+}
+
+function normalizeShikiTheme(theme: string): string {
+  const v = theme.toLowerCase();
+  const aliases: Record<string, string> = {
+    "atom-one-dark": "one-dark-pro",
+    "atom-one-light": "one-light",
+    "github": "github-light",
+    "github-dark-dimmed": "github-dark",
+  };
+  return aliases[v] ?? v;
+}
+
+function renderPlainFence(md: MarkdownIt, content: string, lang: string): string {
+  const escaped = md.utils.escapeHtml(content);
+  return `<pre data-lang="${escapeHtmlAttr(lang)}"><code class="language-${escapeHtmlAttr(lang)}">${escaped}</code></pre>\n`;
+}
+
+function trimFenceTerminalEol(content: string): string {
+  // markdown-it fence content usually ends with one terminal newline that is formatting-only.
+  // Keep intentional blank lines while removing this implicit trailing line.
+  if (content.endsWith("\r\n")) return content.slice(0, -2);
+  if (content.endsWith("\n")) return content.slice(0, -1);
+  return content;
+}
+
+function patchShikiFenceHtml(html: string, lang: string): string {
+  const safeLang = escapeHtmlAttr(lang);
+  const withDataLang = html.replace(/^<pre([^>]*)>/, `<pre$1 data-lang="${safeLang}">`);
+  return withDataLang.replace(
+    /^<pre([^>]*)><code([^>]*)>/,
+    (_m, preAttrs: string, codeAttrs: string) => {
+      if (/class=/.test(codeAttrs)) {
+        return `<pre${preAttrs}><code${codeAttrs.replace(/class=(["'])(.*?)\1/, `class=$1$2 language-${safeLang}$1`)}>`;
+      }
+      return `<pre${preAttrs}><code class="language-${safeLang}"${codeAttrs}>`;
+    },
+  );
+}
+
+async function renderShikiFence(
+  md: MarkdownIt,
+  content: string,
+  lang: string,
+  themeDark: string,
+  themeLight: string,
+): Promise<string> {
+  const normalized = normalizeShikiLang(lang);
+  const dark = normalizeShikiTheme(themeDark);
+  const light = normalizeShikiTheme(themeLight);
+  const code = trimFenceTerminalEol(content);
+  try {
+    const shikiHtml = await codeToHtml(code, {
+      lang: normalized,
+      themes: { dark, light },
+    });
+    return `${patchShikiFenceHtml(shikiHtml, lang)}\n`;
+  } catch {
+    try {
+      // Fallback to stable built-in theme names when user config uses hljs-only names.
+      const shikiHtml = await codeToHtml(code, {
+        lang: normalized,
+        themes: { dark: "github-dark", light: "github-light" },
+      });
+      return `${patchShikiFenceHtml(shikiHtml, lang)}\n`;
+    } catch {
+      return renderPlainFence(md, code, lang);
+    }
+  }
+}
+
+export async function markdownToHtml(
+  markdownText: string,
+  extensions: string[],
+  codeHighlight?: boolean,
+  fileIndex = 0,
+  codeThemeDark = "atom-one-dark",
+  codeThemeLight = "atom-one-light",
+): Promise<string> {
   const md = createMarkdownIt(extensions, fileIndex);
 
   // 覆寫 fence renderer
@@ -113,14 +218,10 @@ export function markdownToHtml(markdownText: string, extensions: string[], codeH
   md.renderer.rules.fence = (tokens, idx, options, env, self) => {
     const token = tokens[idx];
     const lang = token.info ? token.info.trim().split(/\s+/)[0] : "";
+    if (lang && token.meta?.["__mdsoneFenceHtml"]) {
+      return token.meta["__mdsoneFenceHtml"] as string;
+    }
     if (lang) {
-      if (codeHighlight) {
-        // ── 後端高亮：直接呼叫 hljs，不需前端載入 JS ──
-        const highlighted = hljs.getLanguage(lang)
-          ? hljs.highlight(token.content, { language: lang, ignoreIllegals: true }).value
-          : md.utils.escapeHtml(token.content); // 不支援的語言退回純文字
-        return `<pre data-lang="${lang}"><code class="language-${lang}">${highlighted}</code></pre>\n`;
-      }
       // ── 前端高亮模式：保留原有邏輯 ──
       token.info = "";  // 清除語言以使用預設渲染
       const rendered = defaultFence
@@ -136,7 +237,27 @@ export function markdownToHtml(markdownText: string, extensions: string[], codeH
       : self.renderToken(tokens, idx, options);
   };
 
-  let html = md.render(markdownText);
+  let html = "";
+  if (codeHighlight) {
+    const env: Record<string, unknown> = {};
+    const tokens = md.parse(markdownText, env);
+    for (const token of tokens) {
+      if (token.type !== "fence") continue;
+      const lang = token.info ? token.info.trim().split(/\s+/)[0] : "";
+      if (!lang) continue;
+      token.meta = token.meta ?? {};
+      token.meta["__mdsoneFenceHtml"] = await renderShikiFence(
+        md,
+        token.content,
+        lang,
+        codeThemeDark,
+        codeThemeLight,
+      );
+    }
+    html = md.renderer.render(tokens, md.options, env);
+  } else {
+    html = md.render(markdownText);
+  }
   // addHeadingIds 已由 markdown-it-anchor 取代，不再需要後處理
   html = escapeCodeBlocks(html);
   html = sanitizeTableCells(html);

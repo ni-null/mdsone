@@ -272,7 +272,14 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      let html = markdownToHtml(fileContent, config.markdown_extensions, config.code_highlight, 0);
+      let html = await markdownToHtml(
+        fileContent,
+        config.markdown_extensions,
+        config.code_highlight,
+        0,
+        config.code_highlight_theme,
+        config.code_highlight_theme_light,
+      );
       html = await pluginManager.processHtml(html, config, { sourceDir: path.dirname(srcFile) });
       documents["index"] = html;
 
@@ -300,7 +307,14 @@ async function main(): Promise<void> {
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, i);
+            let html = await markdownToHtml(
+              content,
+              config.markdown_extensions,
+              config.code_highlight,
+              i,
+              config.code_highlight_theme,
+              config.code_highlight_theme_light,
+            );
             html = await pluginManager.processHtml(html, config, { sourceDir: path.dirname(filepath) });
             documents[tabName] = html;
           }
@@ -342,7 +356,14 @@ async function main(): Promise<void> {
           try {
             const content = await readTextFile(filepath);
             if (content.trim()) {
-              let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
+              let html = await markdownToHtml(
+                content,
+                config.markdown_extensions,
+                config.code_highlight,
+                idx,
+                config.code_highlight_theme,
+                config.code_highlight_theme_light,
+              );
               html = await pluginManager.processHtml(html, config, { sourceDir: dir });
               localeDocs[tabName] = html;
             }
@@ -389,7 +410,14 @@ async function main(): Promise<void> {
         try {
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, idx);
+            let html = await markdownToHtml(
+              content,
+              config.markdown_extensions,
+              config.code_highlight,
+              idx,
+              config.code_highlight_theme,
+              config.code_highlight_theme_light,
+            );
             html = await pluginManager.processHtml(html, config, { sourceDir: folderPath });
             documents[tabName] = html;
           }
@@ -467,7 +495,14 @@ async function main(): Promise<void> {
           console.warn(`[WARN] Skipping '${path.basename(filepath)}' — file is empty.`);
           continue;
         }
-        let html = markdownToHtml(content, config.markdown_extensions, config.code_highlight, 0);
+        let html = await markdownToHtml(
+          content,
+          config.markdown_extensions,
+          config.code_highlight,
+          0,
+          config.code_highlight_theme,
+          config.code_highlight_theme_light,
+        );
         html = await pluginManager.processHtml(html, config, { sourceDir: baseDir });
         const documents: Record<string, string> = { index: html };
         // 每個批次檔案有自己的 config.output_file（供 template 使用）
