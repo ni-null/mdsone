@@ -3,13 +3,11 @@
   "version": "0.1.16",
   "description": "mdsone — Converts Markdown to self-contained HTML.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "bin": {
     "mdsone": "dist/cli.js"
   },
   "exports": {
-    ".": {
+    "./core": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },

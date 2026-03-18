@@ -47,6 +47,20 @@ npx mdsone ./docs -m -o manual.html
 npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400
 ```
 
+## 函式庫 API
+
+建議匯入方式：
+
+```ts
+import { markdownToHtml, buildHtml, DEFAULT_CONFIG } from "mdsone/core";
+import { loadTemplateFiles, loadLocaleFile } from "mdsone/node";
+```
+
+匯入規範：
+
+- 僅支援子路徑匯入：`mdsone/core`、`mdsone/node`。
+- 不支援根路徑匯入 `mdsone`。
+
 ## 授權條款
 
 [MIT](./LICENSE)

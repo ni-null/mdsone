@@ -11,7 +11,7 @@ mdsone is a Markdown conversion tool that transforms Markdown documents into ful
 - 📦 **Self-Contained**: Generated HTML includes all necessary CSS and assets
 - 🖼️ **Image Management**: Embed local and remote images as base64 (with optional resize/compress)
 - ⚙️ **Flexible Configuration**: Supports TOML config files and CLI options
-- 🔌 **Library & CLI**: Use as a command-line tool or integrate as a JavaScript library
+- 🧰 **CLI-first workflow**: Focused on direct command-line usage for docs delivery
 
 ## Quick Start
 
