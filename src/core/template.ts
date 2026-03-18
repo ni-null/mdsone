@@ -32,7 +32,8 @@ export function generateExtraJsTags(
 
 /**
  * 將 template HTML 中的 `{PLACEHOLDER}` 替換為指定值（對應 Python html_output.replace(...)）。
- * 替換完成後清除殘留的 `{UPPERCASE_WORD}` 佔位符。
+ * 僅替換已知 replacements key，不做全域 token 清除。
+ * 這可避免誤傷文件內容中的 `{TITLE}` 之類字串。
  */
 export function assembleTemplate(
   template: string,
@@ -40,11 +41,8 @@ export function assembleTemplate(
 ): string {
   let html = template;
   for (const [key, value] of Object.entries(replacements)) {
-    // 使用 replaceAll 確保全文替換（Python str.replace 也是全文替換）
     html = html.split(`{${key}}`).join(value);
   }
-  // 清除殘餘的 {UPPERCASE_WORD} 佔位符 
-  html = html.replace(/\{[A-Z_]{2,}\}/g, "");
   return html;
 }
 
