@@ -48,9 +48,7 @@ With image embedding:
 npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400
 ```
 
-## License
 
-[MIT](./LICENSE)
 
 ## Acknowledgements
 
