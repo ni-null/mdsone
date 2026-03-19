@@ -121,7 +121,7 @@ async function main(): Promise<void> {
   }
 
   if (inputs.length === 0) {
-    console.error("[Error] No input specified. Usage: mdsone <inputs...> [-o output_path] [-f <boolean>]");
+    console.error("[Error] No input specified. Usage: mdsone <inputs...> [-o output_path] [-f]");
     process.exit(1);
   }
 
@@ -180,12 +180,7 @@ async function main(): Promise<void> {
   }
 
   // ⑥ 解析輸出路徑
-  const forceRaw = args.force?.toLowerCase();
-  if (forceRaw && forceRaw !== "true" && forceRaw !== "false") {
-    console.error("[Error] Invalid value for -f/--force. Use true or false.");
-    process.exit(1);
-  }
-  const force = forceRaw === undefined ? true : forceRaw === "true";
+  const force = args.force === true;
   let outputFile = "";     // 合併模式的最終輸出檔案
   let outputDir = "";     // 批次模式的輸出目錄
 
@@ -208,9 +203,9 @@ async function main(): Promise<void> {
       outputFile = path.join(process.cwd(), "merge.html");
     }
 
-    // ⑦ force 保護
+    // ⑦ 未指定 --force 時，若輸出已存在則中止
     if (!force && fileExists(outputFile)) {
-      console.error("[Error] Output file already exists. Use '-f true' to overwrite.");
+      console.error("[Error] Output file already exists. Use '--force' to overwrite.");
       process.exit(1);
     }
 
@@ -230,9 +225,9 @@ async function main(): Promise<void> {
       outputFile = path.join(process.cwd(), base);
     }
 
-    // ⑦ force 保護
+    // ⑦ 未指定 --force 時，若輸出已存在則中止
     if (!force && fileExists(outputFile)) {
-      console.error("[Error] Output file already exists. Use '-f true' to overwrite.");
+      console.error("[Error] Output file already exists. Use '--force' to overwrite.");
       process.exit(1);
     }
 
@@ -554,9 +549,9 @@ async function main(): Promise<void> {
     for (const { filepath, baseName, baseDir } of batchFiles) {
       const targetFile = path.join(outputDir, baseName + ".html");
 
-      // -f false：目標已存在則 WARN 並跳過（不中止整批）
+      // 未指定 --force：目標已存在則 WARN 並跳過（不中止整批）
       if (!force && fileExists(targetFile)) {
-        console.warn(`[WARN] Skipping '${baseName}.html' — file already exists. Use '-f true' to overwrite.`);
+        console.warn(`[WARN] Skipping '${baseName}.html' — file already exists. Use '--force' to overwrite.`);
         continue;
       }
 

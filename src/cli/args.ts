@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Command } from "commander";
+import { Command, type Help, type Option } from "commander";
 import type { CliArgs, Config, CliProgram } from "../core/types.js";
 import { builtInPlugins } from "../plugins/index.js";
 
@@ -92,6 +92,63 @@ function findImgEmbedSpaceArg(args: string[]): string | null {
   return null;
 }
 
+function formatGroupedHelp(
+  cmd: Command,
+  helper: Help,
+  pluginFlags: Set<string>,
+): string {
+  const termWidth = helper.padWidth(cmd, helper);
+  const helpWidth = helper.helpWidth || 80;
+  const itemIndentWidth = 2;
+  const itemSeparatorWidth = 2;
+  const formatItem = (term: string, description?: string): string => {
+    if (!description) return term;
+    const fullText = `${term.padEnd(termWidth + itemSeparatorWidth)}${description}`;
+    return helper.wrap(
+      fullText,
+      helpWidth - itemIndentWidth,
+      termWidth + itemSeparatorWidth,
+    );
+  };
+  const formatList = (textArray: string[]): string => {
+    return textArray.join("\n").replace(/^/gm, " ".repeat(itemIndentWidth));
+  };
+
+  let output = [`Usage: ${helper.commandUsage(cmd)}`, ""];
+
+  const commandDescription = helper.commandDescription(cmd);
+  if (commandDescription.length > 0) {
+    output = output.concat([helper.wrap(commandDescription, helpWidth, 0), ""]);
+  }
+
+  const argumentList = helper.visibleArguments(cmd).map((argument) => {
+    return formatItem(helper.argumentTerm(argument), helper.argumentDescription(argument));
+  });
+  if (argumentList.length > 0) {
+    output = output.concat(["Arguments:", formatList(argumentList), ""]);
+  }
+
+  const visibleOptions = helper.visibleOptions(cmd);
+  const pluginOptions = visibleOptions.filter((option) => pluginFlags.has(option.flags));
+  const coreOptions = visibleOptions.filter((option) => !pluginFlags.has(option.flags));
+
+  const coreOptionList = coreOptions.map((option) => {
+    return formatItem(helper.optionTerm(option), helper.optionDescription(option));
+  });
+  if (coreOptionList.length > 0) {
+    output = output.concat(["Options:", formatList(coreOptionList), ""]);
+  }
+
+  const pluginOptionList = pluginOptions.map((option) => {
+    return formatItem(helper.optionTerm(option), helper.optionDescription(option));
+  });
+  if (pluginOptionList.length > 0) {
+    output = output.concat(["Plugins:", formatList(pluginOptionList), ""]);
+  }
+
+  return output.join("\n");
+}
+
 /**
  * 解析 CLI 引數並回傳 CliArgs（純物件，不修改 process.env）。
  */
@@ -106,7 +163,7 @@ export function parseArgs(argv?: string[]): CliArgs {
     // Output
     .option("-m, --merge", "Merge all inputs into a single HTML output")
     .option("-o, --output <PATH>", "Output HTML file path")
-    .option("-f, --force <boolean>", "Overwrite existing output file (default: true)")
+    .option("-f, --force", "Overwrite existing output file")
     // Templates & Styling
     .option("-t, --template <NAME|PATH[@VARIANT]>", "Template name/path with optional variant (e.g. normal@warm-cream)")
     .option("--site-title <TEXT>", "Documentation site title (default: Documentation)")
@@ -116,10 +173,22 @@ export function parseArgs(argv?: string[]): CliArgs {
     .option("--config <PATH>", "Specify config.toml path")
     .allowUnknownOption(false);
 
+  const coreOptionFlags = new Set(program.options.map((option) => option.flags));
+
   // Plugin-owned CLI options
   for (const plugin of builtInPlugins) {
     plugin.registerCli?.(program as unknown as CliProgram);
   }
+
+  const pluginOptionFlags = new Set(
+    program.options
+      .filter((option: Option) => !coreOptionFlags.has(option.flags))
+      .map((option: Option) => option.flags),
+  );
+  program.configureHelp({
+    formatHelp: (cmd: Command, helper: Help): string =>
+      formatGroupedHelp(cmd, helper, pluginOptionFlags),
+  });
 
   const parseInput = argv ?? process.argv;
   const badLocale = findI18nModeSpaceArg(parseInput);
@@ -163,7 +232,7 @@ export function parseArgs(argv?: string[]): CliArgs {
   const typed = opts as {
     merge?: boolean;
     output?: string;
-    force?: string;
+    force?: boolean;
     template?: string;
     siteTitle?: string;
     i18nMode?: boolean | string;

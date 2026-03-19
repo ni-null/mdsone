@@ -45,24 +45,34 @@ export const minifyPlugin: Plugin = {
   cliToConfig(opts, out) {
     const raw = opts["minify"];
     const previous = out.plugins ?? {};
-    const prevMinify = previous.minify ?? {};
+    const prevConfig = previous.config ?? {};
+    const prevMinify = (prevConfig["minify"] ?? {}) as Record<string, unknown>;
     if (raw === true) {
       out.plugins = {
         ...previous,
-        minify: { ...prevMinify, enable: true },
+        config: {
+          ...prevConfig,
+          minify: { ...prevMinify, enable: true },
+        },
       };
     } else if (typeof raw === "string") {
       const v = raw.toLowerCase();
       if (v === "off") {
         out.plugins = {
           ...previous,
-          minify: { ...prevMinify, enable: false },
+          config: {
+            ...prevConfig,
+            minify: { ...prevMinify, enable: false },
+          },
         };
       }
     }
   },
 
-  isEnabled: (config) => config.plugins?.minify?.enable === true,
+  isEnabled: (config) => {
+    const minify = config.plugins?.config?.["minify"] as { enable?: boolean } | undefined;
+    return minify?.enable === true;
+  },
   async processOutputHtml(html) {
     const mod = await loadMinifierModule();
     return await mod.minify(html, DEFAULT_MINIFY_OPTIONS);
@@ -79,13 +89,17 @@ export interface MinifyOptions {
 function resolveMinifyConfig(options: MinifyOptions = {}): Config {
   const enable = options.enable ?? true;
   const plugins = options.config?.plugins ?? {};
-  const minify = plugins.minify ?? {};
+  const pluginConfig = plugins.config ?? {};
+  const minify = (pluginConfig["minify"] ?? {}) as Record<string, unknown>;
   return {
     ...DEFAULT_CONFIG,
     ...options.config,
     plugins: {
       ...plugins,
-      minify: { ...minify, enable },
+      config: {
+        ...pluginConfig,
+        minify: { ...minify, enable },
+      },
     },
   };
 }

@@ -34,6 +34,8 @@ function parseCommands(rawLines: string[]): Array<{ lines: number[]; text: strin
 }
 
 type Section = { commentLine: number; comment: string; codeLines: number[]; text: string };
+type CopyMode = "off" | "line" | "cmd" | "none";
+type CopyPluginConfig = { enable?: boolean; mode?: string };
 
 function parseSections(rawLines: string[]): Section[] {
     const sections: Section[] = [];
@@ -62,6 +64,24 @@ function parseSections(rawLines: string[]): Section[] {
     return sections;
 }
 
+function readCopyPluginConfig(config: Config): CopyPluginConfig {
+    const raw = config.plugins?.config?.["copy"];
+    return (raw && typeof raw === "object" ? raw : {}) as CopyPluginConfig;
+}
+
+function normalizeCopyMode(mode: string | undefined): CopyMode {
+    if (mode === "off" || mode === "line" || mode === "cmd" || mode === "none") return mode;
+    return "none";
+}
+
+function resolveCopyRuntime(config: Config): { enable: boolean; mode: CopyMode } {
+    const raw = readCopyPluginConfig(config);
+    return {
+        enable: raw.enable ?? true,
+        mode: normalizeCopyMode(raw.mode),
+    };
+}
+
 export const copyPlugin: Plugin = {
     name: "copy",
 
@@ -81,24 +101,44 @@ export const copyPlugin: Plugin = {
     cliToConfig(opts, out) {
         const raw = opts["codeCopy"];
         if (raw === undefined) return;
-
+        const previous = out.plugins ?? {};
+        const prevConfig = previous.config ?? {};
+        const prevCopy = (prevConfig["copy"] ?? {}) as Record<string, unknown>;
         const v = String(raw).toLowerCase();
         if (v === "off") {
-            out.code_copy      = false;
-            out.code_copy_mode = "off";
+            out.plugins = {
+                ...previous,
+                config: {
+                    ...prevConfig,
+                    copy: { ...prevCopy, enable: false, mode: "off" },
+                },
+            };
         } else if (v === "line") {
-            out.code_copy      = true;
-            out.code_copy_mode = "line";
+            out.plugins = {
+                ...previous,
+                config: {
+                    ...prevConfig,
+                    copy: { ...prevCopy, enable: true, mode: "line" },
+                },
+            };
         } else if (v === "cmd") {
-            out.code_copy      = true;
-            out.code_copy_mode = "cmd";
+            out.plugins = {
+                ...previous,
+                config: {
+                    ...prevConfig,
+                    copy: { ...prevCopy, enable: true, mode: "cmd" },
+                },
+            };
         }
     },
 
-    isEnabled: (config) => config.code_copy !== false && (config.code_copy_mode ?? "none") !== "off",
+    isEnabled: (config) => {
+        const runtime = resolveCopyRuntime(config);
+        return runtime.enable && runtime.mode !== "off" && runtime.mode !== "none";
+    },
 
     processHtml(html, config) {
-        const mode = (config.code_copy_mode ?? "none") as string;
+        const { mode } = resolveCopyRuntime(config);
         if (mode !== "line" && mode !== "cmd") return html;
 
         const $ = load(html, {}, false);
@@ -168,8 +208,9 @@ export const copyPlugin: Plugin = {
 
     getAssets(config): PluginAssets {
         const script   = getCopyButtonScript();
-        const mode     = (config.code_copy_mode ?? "none") as string;
-        const blockOn  = config.code_copy !== false && mode !== "off";
+        const runtime  = resolveCopyRuntime(config);
+        const mode     = runtime.mode;
+        const blockOn  = runtime.enable && mode !== "off" && mode !== "none";
 
         // initCall
         const calls: string[] = [];
@@ -229,11 +270,19 @@ export interface CopyOptions {
 function resolveCopyConfig(options: CopyOptions = {}): Config {
     const mode = options.mode ?? "line";
     const enable = options.enable ?? true;
+    const plugins = options.config?.plugins ?? {};
+    const pluginConfig = plugins.config ?? {};
+    const copy = (pluginConfig["copy"] ?? {}) as Record<string, unknown>;
     return {
         ...DEFAULT_CONFIG,
         ...options.config,
-        code_copy: enable,
-        code_copy_mode: mode,
+        plugins: {
+            ...plugins,
+            config: {
+                ...pluginConfig,
+                copy: { ...copy, enable, mode },
+            },
+        },
     };
 }
 

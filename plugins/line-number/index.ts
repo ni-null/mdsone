@@ -18,6 +18,13 @@ const LINE_NUMBER_CSS = `<style id="mdsone-line-number">\n${getLineNumberStyle()
 // Group 3: raw inner HTML of the <code> element
 const PRE_CODE_RE = /<pre([^>]*)>\s*<code([^>]*)>([\s\S]*?)<\/code>\s*<\/pre>/gi;
 
+type LineNumberPluginConfig = { enable?: boolean };
+
+function readLineNumberPluginConfig(config: Config): LineNumberPluginConfig {
+  const raw = config.plugins?.config?.["line_number"];
+  return (raw && typeof raw === "object" ? raw : {}) as LineNumberPluginConfig;
+}
+
 // ---------------------------------------------------------------------------
 // Attribute string helpers (replace Cheerio's addClass / attr)
 // ---------------------------------------------------------------------------
@@ -138,15 +145,32 @@ export const lineNumberPlugin: Plugin = {
 
   cliToConfig(opts, out) {
     const raw = opts["codeLineNumber"];
+    const previous = out.plugins ?? {};
+    const prevConfig = previous.config ?? {};
+    const prevLineNumber = (prevConfig["line_number"] ?? {}) as Record<string, unknown>;
     if (raw === true) {
-      out.code_line_number = true;
+      out.plugins = {
+        ...previous,
+        config: {
+          ...prevConfig,
+          line_number: { ...prevLineNumber, enable: true },
+        },
+      };
     } else if (typeof raw === "string") {
       const v = raw.toLowerCase();
-      if (v === "off") out.code_line_number = false;
+      if (v === "off") {
+        out.plugins = {
+          ...previous,
+          config: {
+            ...prevConfig,
+            line_number: { ...prevLineNumber, enable: false },
+          },
+        };
+      }
     }
   },
 
-  isEnabled: (config) => config.code_line_number === true,
+  isEnabled: (config) => readLineNumberPluginConfig(config).enable === true,
 
   // [OPT] Cheerio removed — single regex replace, no DOM parse/serialize.
   //       processHtml is now fully synchronous with no allocations beyond
@@ -175,10 +199,19 @@ export interface LineNumberOptions {
 
 function resolveLineNumberConfig(options: LineNumberOptions = {}): Config {
   const enable = options.enable ?? true;
+  const plugins = options.config?.plugins ?? {};
+  const pluginConfig = plugins.config ?? {};
+  const lineNumber = (pluginConfig["line_number"] ?? {}) as Record<string, unknown>;
   return {
     ...DEFAULT_CONFIG,
     ...options.config,
-    code_line_number: enable,
+    plugins: {
+      ...plugins,
+      config: {
+        ...pluginConfig,
+        line_number: { ...lineNumber, enable },
+      },
+    },
   };
 }
 

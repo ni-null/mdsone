@@ -89,6 +89,15 @@ type HighlighterBundle = {
 
 const highlighterCache = new Map<string, Promise<HighlighterBundle>>();
 
+type ShikiPluginConfig = {
+  enable?: boolean;
+};
+
+function readShikiPluginConfig(config: Config): ShikiPluginConfig {
+  const raw = config.plugins?.config?.["shiki"];
+  return (raw && typeof raw === "object" ? raw : {}) as ShikiPluginConfig;
+}
+
 function highlighterKey(dark: string, light: string): string {
   return `${light}::${dark}`;
 }
@@ -204,10 +213,20 @@ export const shikiPlugin: Plugin = {
 
   cliToConfig(opts, out) {
     const raw = opts["codeHighlight"];
-    if (String(raw ?? "").toLowerCase() === "off") out.code_highlight = false;
+    if (String(raw ?? "").toLowerCase() !== "off") return;
+    const prevPlugins = out.plugins ?? {};
+    const prevConfig = prevPlugins.config ?? {};
+    const prevShiki = (prevConfig["shiki"] ?? {}) as Record<string, unknown>;
+    out.plugins = {
+      ...prevPlugins,
+      config: {
+        ...prevConfig,
+        shiki: { ...prevShiki, enable: false },
+      },
+    };
   },
 
-  isEnabled: (config) => config.code_highlight,
+  isEnabled: (config) => readShikiPluginConfig(config).enable ?? true,
 
   async processHtml(html, config, context) {
     const $ = load(html, {}, false);
@@ -329,10 +348,19 @@ export interface ShikiOptions {
 
 function resolveShikiConfig(options: ShikiOptions = {}): Config {
   const enable = options.enable ?? true;
+  const plugins = options.config?.plugins ?? {};
+  const pluginConfig = plugins.config ?? {};
+  const shiki = (pluginConfig["shiki"] ?? {}) as Record<string, unknown>;
   return {
     ...DEFAULT_CONFIG,
     ...options.config,
-    code_highlight: enable,
+    plugins: {
+      ...plugins,
+      config: {
+        ...pluginConfig,
+        shiki: { ...shiki, enable },
+      },
+    },
   };
 }
 

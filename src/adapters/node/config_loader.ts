@@ -49,34 +49,6 @@ export function envToConfig(): Partial<Config> {
   if (e["LOCALE"]) out.locale = e["LOCALE"];
   if (e["DEFAULT_LOCALE"]) out.default_locale = e["DEFAULT_LOCALE"];
   if (e["I18N_MODE"] !== undefined) out.i18n_mode = parseBool(e["I18N_MODE"], false);
-  if (e["IMG_EMBED"] !== undefined) {
-    const mode = String(e["IMG_EMBED"]).trim().toLowerCase();
-    if (mode === "off" || mode === "base64") {
-      out.img_embed = mode;
-      out.img_to_base64 = mode === "base64";
-    } else if (e["IMG_TO_BASE64"] !== undefined) {
-      const legacy = parseBool(e["IMG_TO_BASE64"], false);
-      out.img_to_base64 = legacy;
-      out.img_embed = legacy ? "base64" : "off";
-    }
-  } else if (e["IMG_TO_BASE64"] !== undefined) {
-    const legacy = parseBool(e["IMG_TO_BASE64"], false);
-    out.img_to_base64 = legacy;
-    out.img_embed = legacy ? "base64" : "off";
-  }
-  if (e["IMG_MAX_WIDTH"] !== undefined) { const w = parseInt(e["IMG_MAX_WIDTH"]!, 10); if (!isNaN(w) && w > 0) out.img_max_width = w; }
-  if (e["IMG_COMPRESS"] !== undefined) { const q = parseInt(e["IMG_COMPRESS"]!, 10); if (!isNaN(q)) out.img_compress = Math.max(1, Math.min(100, q)); }
-  if (e["CODE_HIGHLIGHT"] !== undefined) out.code_highlight = parseBool(e["CODE_HIGHLIGHT"], true);
-  if (e["CODE_COPY"] !== undefined) {
-    const raw = String(e["CODE_COPY"]).trim().toLowerCase();
-    if (raw === "off" || raw === "line" || raw === "cmd") {
-      out.code_copy = raw !== "off";
-      out.code_copy_mode = raw;
-    } else {
-      out.code_copy = parseBool(e["CODE_COPY"], true);
-    }
-  }
-  if (e["CODE_LINE_NUMBER"] !== undefined) out.code_line_number = parseBool(e["CODE_LINE_NUMBER"], false);
   if (e["MARKDOWN_EXTENSIONS"]) {
     out.markdown_extensions = parseList(e["MARKDOWN_EXTENSIONS"], DEFAULT_CONFIG.markdown_extensions);
   }
@@ -115,51 +87,23 @@ function tomlToConfig(raw: Record<string, unknown>): Partial<Config> {
   if (b(i18n["mode"]) !== undefined) out.i18n_mode = b(i18n["mode"]);
   if (s(i18n["default_locale"])) out.default_locale = s(i18n["default_locale"]);
 
-  const copy = (plugins["copy"] ?? {}) as Record<string, unknown>;
-  const shiki = (plugins["shiki"] ?? {}) as Record<string, unknown>;
-  const image = (plugins["image"] ?? {}) as Record<string, unknown>;
-  const lineNumber = (plugins["line_number"] ?? {}) as Record<string, unknown>;
-  const minify = (plugins["minify"] ?? {}) as Record<string, unknown>;
   const order = (plugins["order"] ?? undefined) as unknown;
   if (Array.isArray(order)) {
     out.plugins = { ...(out.plugins ?? {}), order: order.filter((x) => typeof x === "string") as string[] };
   }
-  if (b(minify["enable"]) !== undefined) {
+  const pluginConfigEntries = Object.entries(plugins).filter(
+    ([k, v]) => k !== "order" && typeof v === "object" && v !== null && !Array.isArray(v),
+  );
+  if (pluginConfigEntries.length > 0) {
+    const prevConfig = out.plugins?.config ?? {};
     out.plugins = {
       ...(out.plugins ?? {}),
-      minify: {
-        ...((out.plugins?.minify as { enable?: boolean } | undefined) ?? {}),
-        enable: b(minify["enable"])!,
+      config: {
+        ...prevConfig,
+        ...Object.fromEntries(pluginConfigEntries as Array<[string, Record<string, unknown>]>),
       },
     };
   }
-  if (b(copy["enable"]) !== undefined) out.code_copy = b(copy["enable"])!;
-  const copyMode = s(copy["mode"]);
-  if (copyMode) {
-    const normalizedMode = copyMode === "none" ? "off" : copyMode;
-    if (["off", "line", "cmd"].includes(normalizedMode)) {
-      out.code_copy_mode = normalizedMode;
-    }
-  }
-  if (b(shiki["enable"]) !== undefined) out.code_highlight = b(shiki["enable"])!;
-  const imageEmbedRaw = s(image["embed"]);
-  const imageEmbed = imageEmbedRaw?.toLowerCase();
-  if (imageEmbed && (imageEmbed === "off" || imageEmbed === "base64")) {
-    out.img_embed = imageEmbed;
-    out.img_to_base64 = imageEmbed === "base64";
-  } else if (b(image["base64_embed"]) !== undefined) {
-    const legacy = b(image["base64_embed"])!;
-    out.img_to_base64 = legacy;
-    out.img_embed = legacy ? "base64" : "off";
-  }
-  if (typeof image["max_width"] === "number" && (image["max_width"] as number) > 0) {
-    out.img_max_width = image["max_width"] as number;
-  }
-  if (typeof image["compress"] === "number") {
-    out.img_compress = Math.max(1, Math.min(100, image["compress"] as number));
-  }
-  if (b(lineNumber["enable"]) !== undefined) out.code_line_number = b(lineNumber["enable"])!;
-
   return out;
 }
 

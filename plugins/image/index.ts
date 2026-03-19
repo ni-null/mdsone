@@ -14,6 +14,14 @@ import { DEFAULT_CONFIG } from "../../src/core/config.js";
 import { fetchRemoteImage, MIME_MAP } from "./fetch-image.js";
 import { processImageBuffer } from "./process-image.js";
 
+type ImageEmbedMode = "off" | "base64";
+type ImagePluginConfig = {
+    embed?: unknown;
+    base64_embed?: unknown;
+    max_width?: unknown;
+    compress?: unknown;
+};
+
 async function embedImagesInHtml(
     html: string,
     baseDir: string,
@@ -61,6 +69,33 @@ async function embedImagesInHtml(
     return result;
 }
 
+function readImagePluginConfig(config: Config): ImagePluginConfig {
+    const raw = config.plugins?.config?.["image"];
+    return (raw && typeof raw === "object" ? raw : {}) as ImagePluginConfig;
+}
+
+function normalizeEmbedMode(raw: unknown): ImageEmbedMode | null {
+    if (typeof raw !== "string") return null;
+    const mode = raw.trim().toLowerCase();
+    if (mode === "off" || mode === "base64") return mode;
+    return null;
+}
+
+function resolveImageRuntime(config: Config): {
+    embed: ImageEmbedMode;
+    maxWidth: number;
+    compress: number;
+} {
+    const raw = readImagePluginConfig(config);
+    const embed = normalizeEmbedMode(raw.embed)
+        ?? (typeof raw.base64_embed === "boolean" ? (raw.base64_embed ? "base64" : "off") : "off");
+    const maxWidth = typeof raw.max_width === "number" && raw.max_width > 0 ? raw.max_width : 0;
+    const compress = typeof raw.compress === "number"
+        ? Math.max(1, Math.min(100, raw.compress))
+        : 0;
+    return { embed, maxWidth, compress };
+}
+
 export const imageEmbedPlugin: Plugin = {
     name: "image",
 
@@ -80,32 +115,45 @@ export const imageEmbedPlugin: Plugin = {
     },
 
     cliToConfig(opts, out) {
+        const previous = out.plugins ?? {};
+        const prevConfig = previous.config ?? {};
+        const prevImage = (prevConfig["image"] ?? {}) as Record<string, unknown>;
+        const nextImage: Record<string, unknown> = { ...prevImage };
+
         const rawEmbed = opts["imgEmbed"];
         if (typeof rawEmbed === "string") {
             const mode = rawEmbed.toLowerCase();
             if (mode === "off" || mode === "base64") {
-                out.img_embed = mode;
-                out.img_to_base64 = mode === "base64";
+                nextImage["embed"] = mode;
             }
         }
         const maxWidth = opts["imgMaxWidth"];
         if (typeof maxWidth === "string" && maxWidth !== "") {
             const w = parseInt(maxWidth, 10);
-            if (!isNaN(w) && w > 0) out.img_max_width = w;
+            if (!isNaN(w) && w > 0) nextImage["max_width"] = w;
         }
         const compress = opts["imgCompress"];
         if (typeof compress === "string" && compress !== "") {
             const q = parseInt(compress, 10);
-            if (!isNaN(q)) out.img_compress = Math.max(1, Math.min(100, q));
+            if (!isNaN(q)) nextImage["compress"] = Math.max(1, Math.min(100, q));
         }
+
+        out.plugins = {
+            ...previous,
+            config: {
+                ...prevConfig,
+                image: nextImage,
+            },
+        };
     },
 
-    isEnabled: (config) => (config.img_embed ?? (config.img_to_base64 ? "base64" : "off")) === "base64",
+    isEnabled: (config) => resolveImageRuntime(config).embed === "base64",
 
     async processHtml(html, config, context) {
+        const runtime = resolveImageRuntime(config);
         return embedImagesInHtml(html, context.sourceDir, {
-            maxWidth: config.img_max_width || undefined,
-            compress: config.img_compress || undefined,
+            maxWidth: runtime.maxWidth || undefined,
+            compress: runtime.compress || undefined,
         });
     },
 };
@@ -127,13 +175,24 @@ export interface ImageOptions {
 
 function resolveImageConfig(options: ImageOptions = {}): Config {
     const embed = options.embed ?? (options.enable === false ? "off" : "base64");
+    const plugins = options.config?.plugins ?? {};
+    const pluginConfig = plugins.config ?? {};
+    const image = (pluginConfig["image"] ?? {}) as Record<string, unknown>;
     return {
         ...DEFAULT_CONFIG,
         ...options.config,
-        img_embed: embed,
-        img_to_base64: embed === "base64",
-        img_max_width: options.maxWidth ?? options.config?.img_max_width ?? DEFAULT_CONFIG.img_max_width,
-        img_compress: options.compress ?? options.config?.img_compress ?? DEFAULT_CONFIG.img_compress,
+        plugins: {
+            ...plugins,
+            config: {
+                ...pluginConfig,
+                image: {
+                    ...image,
+                    embed,
+                    ...(options.maxWidth !== undefined ? { max_width: options.maxWidth } : {}),
+                    ...(options.compress !== undefined ? { compress: options.compress } : {}),
+                },
+            },
+        },
     };
 }
 

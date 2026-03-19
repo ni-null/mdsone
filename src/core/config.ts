@@ -23,16 +23,6 @@ export const DEFAULT_CONFIG: Config = {
   locale: "en",
   i18n_mode: false,
   default_locale: "",
-  // advanced
-  img_embed: "off",
-  img_to_base64: false,
-  img_max_width: 0,
-  img_compress: 0,
-  // code features
-  code_highlight: true,
-  code_copy: true,
-  code_copy_mode: "none",
-  code_line_number: false,
   template_variant: "default",
 };
 
@@ -83,8 +73,14 @@ function mergePluginSettings(
     if (!layer) continue;
     hasAny = true;
     if (layer.order) merged.order = [...layer.order];
-    if (layer.minify) {
-      merged.minify = { ...(merged.minify ?? {}), ...layer.minify };
+    if (layer.config) {
+      const prev = merged.config ?? {};
+      const next = { ...prev };
+      for (const [pluginName, cfg] of Object.entries(layer.config)) {
+        const before = next[pluginName] ?? {};
+        next[pluginName] = { ...before, ...cfg };
+      }
+      merged.config = next;
     }
   }
   return hasAny ? merged : undefined;

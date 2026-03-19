@@ -3,7 +3,7 @@
 ## 語法
 
 ```bash
-mdsone <inputs...> [-m] [-o output_path] [-f <boolean>] [options]
+mdsone <inputs...> [-m] [-o output_path] [-f] [options]
 ```
 
 ## 參數一覽
@@ -13,7 +13,7 @@ mdsone <inputs...> [-m] [-o output_path] [-f <boolean>] [options]
 | `<inputs...>` | 輸入來源：單一檔、多個檔、或單一資料夾 | `README.md`、`a.md b.md`、`./docs` |
 | `-m, --merge` | 合併所有輸入為單一 HTML | `-m` |
 | `-o, --output PATH` | 輸出路徑；合併模式為檔案，批次模式多檔 / 資料夾為目錄 | `-o dist/index.html` |
-| `-f, --force <boolean>` | 是否覆蓋既有輸出（預設 `true`） | `-f false` |
+| `-f, --force` | 是否覆蓋既有輸出（預設不覆蓋） | `-f` |
 | `-t, --template <theme-or-path>[@variant]` | 模板名稱或路徑（可附加變體） | `-t normal@warm-cream` |
 | `--site-title <TEXT>` | 文件標題 | `--site-title "My Docs"` |
 | `--minify [off]` | 壓縮輸出 HTML（預設關閉） | `--minify`、`--minify=off` |
@@ -67,9 +67,9 @@ npx mdsone ./docs -m -o dist/manual.html
 
 | 旗標 | 行為 |
 |------|------|
-| `-f true` | 直接覆蓋輸出 |
-| `-f false`（合併模式） | 目標已存在時中止 |
-| `-f false`（批次模式） | 已存在檔案會跳過，其餘繼續 |
+| `-f` / `--force` | 直接覆蓋輸出 |
+| 未指定 `-f`（合併模式） | 目標已存在時中止 |
+| 未指定 `-f`（批次模式） | 已存在檔案會跳過，其餘繼續 |
 
 ## 設定優先順序
 
