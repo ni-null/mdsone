@@ -3,6 +3,13 @@
 </p>
 
 <h1 align="center">mdsone — Markdown to One (HTML)</h1>
+<p align="center">
+  <a href="https://www.npmjs.com/package/mdsone"><img alt="npm version" src="https://img.shields.io/npm/v/mdsone?logo=npm" /></a>
+  <a href="https://www.npmjs.com/package/mdsone"><img alt="node" src="https://img.shields.io/node/v/mdsone?logo=node.js" /></a>
+  <a href="https://github.com/ni-null/mdsone/actions/workflows/deploy-docs.yml"><img alt="docs build" src="https://img.shields.io/github/actions/workflow/status/ni-null/mdsone/deploy-docs.yml?label=docs%20build" /></a>
+  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/ni-null/mdsone" /></a>
+</p>
+
 
 mdsone is a Markdown conversion tool that transforms Markdown documents into fully functional, self-contained HTML files.
 
