@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Plugin } from "../core/types.js";
+import { katexPlugin } from "../../plugins/katex/index.js";
 import { shikiPlugin } from "../../plugins/shiki/index.js";
 import { copyPlugin } from "../../plugins/copy/index.js";
 import { imageEmbedPlugin } from "../../plugins/image/index.js";
@@ -14,6 +15,7 @@ import { minifyPlugin } from "../../plugins/minify/index.js";
  */
 export const builtInPlugins: Plugin[] = [
   imageEmbedPlugin,
+  katexPlugin,
   shikiPlugin,
   copyPlugin,
   lineNumberPlugin,

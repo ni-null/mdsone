@@ -175,7 +175,7 @@ export interface PluginAssets {
   js?: string;
 }
 
-/** Context passed to plugin processHtml(). */
+/** Context passed to plugin DOM hook. */
 export interface PluginContext {
   /** Source markdown directory used for relative path resolution. */
   sourceDir: string;
@@ -202,12 +202,26 @@ export interface Plugin {
   /** Return whether this plugin is enabled for current config. */
   isEnabled: (config: Config) => boolean;
 
-  /** Post-process HTML after markdown-to-HTML conversion. */
-  processHtml?: (
-    html: string,
+  /**
+   * Markdown-it extension hook.
+   * Runs before markdown rendering for each document.
+   */
+  extendMarkdown?: (
+    md: unknown,
     config: Config,
     context: PluginContext,
-  ) => string | Promise<string>;
+  ) => void;
+
+  /**
+   * DOM-based post-processing.
+   * Receives a mutable DOM adapter created by PluginManager (currently Cheerio).
+   * Keep this typed as `unknown` to avoid binding core types to a specific DOM library.
+   */
+  processDom?: (
+    dom: unknown,
+    config: Config,
+    context: PluginContext,
+  ) => void | Promise<void>;
 
   /** Post-process final output HTML (after buildHtml, before write). */
   processOutputHtml?: (

@@ -9,6 +9,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { load, type CheerioAPI } from "cheerio";
 import type { Config, Plugin, PluginAssets } from "../../src/core/types.js";
 import { DEFAULT_CONFIG } from "../../src/core/config.js";
 import { fetchRemoteImage, MIME_MAP } from "./fetch-image.js";
@@ -22,17 +23,16 @@ type ImagePluginConfig = {
     compress?: unknown;
 };
 
-async function embedImagesInHtml(
-    html: string,
+async function embedImagesInDom(
+    $: CheerioAPI,
     baseDir: string,
     opts: { maxWidth?: number; compress?: number } = {},
-): Promise<string> {
-    const imgPattern = /<img([^>]*)\ssrc=(['"])([^'"]+)\2([^>]*)>/gi;
-    const replacements: Array<{ original: string; replaced: string }> = [];
-
-    let match: RegExpExecArray | null;
-    while ((match = imgPattern.exec(html)) !== null) {
-        const [full, before, , src, after] = match;
+): Promise<void> {
+    const nodes = $("img[src]").toArray();
+    for (const node of nodes) {
+        const imgEl = $(node);
+        const src = String(imgEl.attr("src") ?? "").trim();
+        if (!src) continue;
         if (/^data:/i.test(src)) continue;
 
         let imageData: { buffer: Buffer; mime: string } | null = null;
@@ -59,14 +59,8 @@ async function embedImagesInHtml(
 
         const processed = await processImageBuffer(imageData.buffer, imageData.mime, opts);
         const dataUrl = `data:${processed.mime};base64,${processed.buffer.toString("base64")}`;
-        replacements.push({ original: full, replaced: `<img${before} src="${dataUrl}"${after}>` });
+        imgEl.attr("src", dataUrl);
     }
-
-    let result = html;
-    for (const { original, replaced } of replacements) {
-        result = result.replace(original, replaced);
-    }
-    return result;
 }
 
 function readImagePluginConfig(config: Config): ImagePluginConfig {
@@ -149,9 +143,9 @@ export const imageEmbedPlugin: Plugin = {
 
     isEnabled: (config) => resolveImageRuntime(config).embed === "base64",
 
-    async processHtml(html, config, context) {
+    async processDom(dom, config, context) {
         const runtime = resolveImageRuntime(config);
-        return embedImagesInHtml(html, context.sourceDir, {
+        await embedImagesInDom(dom as CheerioAPI, context.sourceDir, {
             maxWidth: runtime.maxWidth || undefined,
             compress: runtime.compress || undefined,
         });
@@ -199,10 +193,11 @@ function resolveImageConfig(options: ImageOptions = {}): Config {
 /** Convenience transformer: `result = await image(result)` (Node-only) */
 export async function image(html: string, options: ImageOptions = {}): Promise<string> {
     const config = resolveImageConfig(options);
-    if (!imageEmbedPlugin.isEnabled(config) || !imageEmbedPlugin.processHtml) return html;
-    return await imageEmbedPlugin.processHtml(html, config, {
-        sourceDir: options.sourceDir ?? process.cwd(),
-    });
+    if (!imageEmbedPlugin.isEnabled(config)) return html;
+    if (!imageEmbedPlugin.processDom) return html;
+    const $ = load(html, {}, false);
+    await imageEmbedPlugin.processDom($ as unknown, config, { sourceDir: options.sourceDir ?? process.cwd() });
+    return $.html() || html;
 }
 
 /** Image plugin currently has no CSS/JS assets. */

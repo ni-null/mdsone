@@ -3,6 +3,7 @@
 // Plugin manager: order, HTML post-processing, and asset aggregation.
 // ============================================================
 
+import { load } from "cheerio";
 import type { Config, Plugin, PluginContext } from "../core/types.js";
 import { builtInPlugins } from "./index.js";
 
@@ -35,31 +36,58 @@ export class PluginManager {
   }
 
   /**
-   * Run enabled plugins' `processHtml()` in order.
-   * Failures are logged and do not stop the remaining plugins.
+   * Run enabled plugins' `extendMarkdown()` in order.
+   * Failures are logged and do not stop remaining plugins.
+   */
+  extendMarkdown(
+    markdownIt: unknown,
+    config: Config,
+    context: PluginContext,
+  ): void {
+    const ordered = sortPlugins(
+      [...this.plugins],
+      (config as unknown as { plugins?: { order?: string[] } }).plugins?.order,
+    );
+    for (const plugin of ordered) {
+      if (!plugin.isEnabled(config) || !plugin.extendMarkdown) continue;
+      try {
+        plugin.extendMarkdown(markdownIt, config, context);
+      } catch (e) {
+        console.warn(
+          `[WARN] Plugin "${plugin.name}" extendMarkdown failed: ${e instanceof Error ? e.message : e}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Run enabled plugins' `processDom()` in order on a shared DOM tree.
+   * Failures are logged and do not stop remaining plugins.
    */
   async processHtml(
     html: string,
     config: Config,
     context: PluginContext,
   ): Promise<string> {
-    let result = html;
     const ordered = sortPlugins(
       [...this.plugins],
       (config as unknown as { plugins?: { order?: string[] } }).plugins?.order,
     );
-    for (const plugin of ordered) {
-      if (plugin.isEnabled(config) && plugin.processHtml) {
-        try {
-          result = await plugin.processHtml(result, config, context);
-        } catch (e) {
-          console.warn(
-            `[WARN] Plugin "${plugin.name}" processHtml failed: ${e instanceof Error ? e.message : e}`,
-          );
-        }
+
+    const enabled = ordered.filter((plugin) => plugin.isEnabled(config) && plugin.processDom);
+    if (enabled.length === 0) return html;
+    const dom = load(html, {}, false);
+    for (const plugin of enabled) {
+      try {
+        await plugin.processDom!(dom as unknown, config, context);
+      } catch (e) {
+        console.warn(
+          `[WARN] Plugin "${plugin.name}" processDom failed: ${e instanceof Error ? e.message : e}`,
+        );
       }
     }
-    return result;
+    const serialized = dom.html();
+    return serialized || html;
   }
 
   /**

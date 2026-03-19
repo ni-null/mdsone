@@ -323,6 +323,18 @@ async function main(): Promise<void> {
 
   // ⑪-b 透過 PluginManager 收集 plugin 靜態資源
   const pluginManager = new PluginManager();
+  const renderMarkdownWithPlugins = (
+    markdownText: string,
+    fileIndex: number,
+    sourceDir: string,
+  ): string => {
+    return markdownToHtml(
+      markdownText,
+      config.markdown_extensions,
+      fileIndex,
+      (md) => pluginManager.extendMarkdown(md, config, { sourceDir, templateData }),
+    );
+  };
   const { css: libCss, js: libJs } = await runAsync(() => pluginManager.getAssets(config));
   const localeNames = await runAsync(() => loadLocaleNamesConfig(config.locales_dir));
 
@@ -338,7 +350,7 @@ async function main(): Promise<void> {
       }
 
       const documents: Record<string, string> = {};
-      let html = runSync(() => markdownToHtml(fileContent, config.markdown_extensions, 0));
+      let html = runSync(() => renderMarkdownWithPlugins(fileContent, 0, path.dirname(srcFile)));
       html = await runAsync(
         () => pluginManager.processHtml(
           html,
@@ -373,7 +385,7 @@ async function main(): Promise<void> {
         try {
           const content = await runAsync(() => readTextFile(filepath));
           if (content.trim()) {
-            let html = runSync(() => markdownToHtml(content, config.markdown_extensions, i));
+            let html = runSync(() => renderMarkdownWithPlugins(content, i, path.dirname(filepath)));
             html = await runAsync(
               () => pluginManager.processHtml(
                 html,
@@ -422,7 +434,7 @@ async function main(): Promise<void> {
           try {
             const content = await runAsync(() => readTextFile(filepath));
             if (content.trim()) {
-              let html = runSync(() => markdownToHtml(content, config.markdown_extensions, idx));
+              let html = runSync(() => renderMarkdownWithPlugins(content, idx, dir));
               html = await runAsync(
                 () => pluginManager.processHtml(
                   html,
@@ -476,7 +488,7 @@ async function main(): Promise<void> {
         try {
           const content = await runAsync(() => readTextFile(filepath));
           if (content.trim()) {
-            let html = runSync(() => markdownToHtml(content, config.markdown_extensions, idx));
+            let html = runSync(() => renderMarkdownWithPlugins(content, idx, folderPath));
             html = await runAsync(
               () => pluginManager.processHtml(
                 html,
@@ -561,7 +573,7 @@ async function main(): Promise<void> {
           console.warn(`[WARN] Skipping '${path.basename(filepath)}' — file is empty.`);
           continue;
         }
-        let html = runSync(() => markdownToHtml(content, config.markdown_extensions, 0));
+        let html = runSync(() => renderMarkdownWithPlugins(content, 0, baseDir));
         html = await runAsync(
           () => pluginManager.processHtml(
             html,

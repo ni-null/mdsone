@@ -124,3 +124,18 @@ npx mdsone ./docs -m --code-highlight=off --code-copy=off
 # 顯示行號
 npx mdsone ./docs -m --code-line-number
 ```
+
+## KaTeX 數學公式（新）
+
+預設關閉，帶上 `--katex` 才會啟用：
+
+```bash
+npx mdsone README.md -o index.html --katex
+npx mdsone README.md -o index.html --katex=full
+```
+
+`--katex` 預設為 `woff2` 模式；`--katex=full` 會內嵌所有 KaTeX 字型。
+
+啟用後會：
+1. 在 Markdown 解析階段註冊 `markdown-it-katex`
+2. 自動把 KaTeX CSS 內嵌到輸出 HTML（單檔可離線使用）

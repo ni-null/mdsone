@@ -4,7 +4,7 @@
 // Core renders plain fenced blocks first; this plugin rewrites
 // <pre><code class="language-...">...</code></pre> using Shiki.
 // ============================================================
-import { load } from "cheerio";
+import { load, type CheerioAPI } from "cheerio";
 import { createHighlighter } from "shiki";
 import hljs from "highlight.js";
 import type { Config, Plugin, PluginAssets, TemplateData } from "../../src/core/types.js";
@@ -234,8 +234,8 @@ export const shikiPlugin: Plugin = {
 
   isEnabled: (config) => readShikiPluginConfig(config).enable ?? true,
 
-  async processHtml(html, config, context) {
-    const $ = load(html, {}, false);
+  async processDom(dom, config, context) {
+    const $ = dom as CheerioAPI;
     const codeNodes = $("pre > code").toArray();
     const typeName = config.template_variant || "default";
     const defaultTypeCfg = context.templateData?.config?.types?.default;
@@ -250,7 +250,7 @@ export const shikiPlugin: Plugin = {
     const bundle = await getHighlighterBundle(themeDark, themeLight);
 
     type FenceEntry = {
-      preEl: ReturnType<typeof $>;
+      preEl: any;
       codeText: string;
       lang: string;
       normalizedLang: string;
@@ -332,7 +332,7 @@ export const shikiPlugin: Plugin = {
       fence.preEl.replaceWith(newPre);
     }
 
-    return $.html() || html;
+    return;
   },
 
   // [OPT-6] 直接回傳模組常數，不再每次建構字串
@@ -373,11 +373,13 @@ function resolveShikiConfig(options: ShikiOptions = {}): Config {
 /** Convenience transformer: `result = await shiki(result)` */
 export async function shiki(html: string, options: ShikiOptions = {}): Promise<string> {
   const config = resolveShikiConfig(options);
-  if (!shikiPlugin.isEnabled(config) || !shikiPlugin.processHtml) return html;
-  return await shikiPlugin.processHtml(html, config, {
+  if (!shikiPlugin.isEnabled(config) || !shikiPlugin.processDom) return html;
+  const $ = load(html, {}, false);
+  await shikiPlugin.processDom($ as unknown, config, {
     sourceDir: options.sourceDir ?? "",
     templateData: options.templateData,
   });
+  return $.html() || html;
 }
 
 /** Plugin CSS assets for host template injection. */

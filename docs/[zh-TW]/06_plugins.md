@@ -127,3 +127,24 @@ image = { embed = "off", max_width = 0, compress = 0 }
 4. `line_number`
 
 可用 `[plugins].order` 自訂順序；未列出的 plugin 會排在後面。
+
+## katex
+
+用途：
+1. 於 Markdown 前置階段註冊 `markdown-it-katex`（支援數學公式）
+2. 透過 `getAssets()` 內嵌 KaTeX CSS
+
+CLI：
+```bash
+npx mdsone README.md -o index.html --katex
+npx mdsone README.md -o index.html --katex=full
+```
+
+TOML：
+```toml
+[plugins.katex]
+enable = true
+mode = "full"
+```
+
+`mode` 可省略（預設為 `woff2`）；設為 `full` 時會內嵌所有 KaTeX 字型。

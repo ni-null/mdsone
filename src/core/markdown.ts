@@ -92,8 +92,12 @@ export function markdownToHtml(
   markdownText: string,
   extensions: string[],
   fileIndex = 0,
+  extendMarkdown?: (md: MarkdownIt) => void,
 ): string {
   const md = createMarkdownIt(extensions, fileIndex);
+  if (extendMarkdown) {
+    extendMarkdown(md);
+  }
 
   // 覆寫 fence renderer
   const defaultFence = md.renderer.rules.fence;

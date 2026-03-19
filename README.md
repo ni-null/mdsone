@@ -10,6 +10,7 @@ mdsone is a Markdown conversion tool that transforms Markdown documents into ful
 - 🌍 **Internationalization**: Multi-language document support (i18n)
 - 📦 **Self-Contained**: Generated HTML includes all necessary CSS and assets
 - 🖼️ **Image Management**: Embed local and remote images as base64 (with optional resize/compress)
+- ∑ **Math Formulas (Optional)**: KaTeX rendering via `--katex` (default `woff2`) or `--katex=full` (all fonts)
 - ⚙️ **Flexible Configuration**: Supports TOML config files and CLI options
 - 🧰 **CLI-first workflow**: Focused on direct command-line usage for docs delivery
 
@@ -52,6 +53,7 @@ npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400
 mdsone is built on top of excellent open-source packages:
 
 - `markdown-it` ecosystem (`markdown-it`, `markdown-it-anchor`, `markdown-it-attrs`): Core Markdown parsing/rendering, heading ID generation, and attribute support.
+- `markdown-it-katex` + `katex`: Optional math formula parsing and KaTeX HTML/CSS rendering.
 - `shiki`: High-quality syntax highlighting output.
 - `highlight.js`: Language auto-detection fallback for unlabeled code fences.
 - `cheerio`: HTML AST-style rewriting for plugin post-processing.

@@ -18,8 +18,10 @@ export default defineConfig([
       "@iarna/toml",
       "commander",
       "html-minifier-terser",
+      "katex",
       "markdown-it",
       "markdown-it-attrs",
+      "markdown-it-katex",
     ],
   },
   // Core library entry (pure functions, zero I/O)
@@ -35,8 +37,10 @@ export default defineConfig([
     sourcemap: true,
     external: [
       "html-minifier-terser",
+      "katex",
       "markdown-it",
       "markdown-it-attrs",
+      "markdown-it-katex",
     ],
   },
   // Node adapter entry (I/O layer)
@@ -54,14 +58,17 @@ export default defineConfig([
       "@iarna/toml",
       "commander",
       "html-minifier-terser",
+      "katex",
       "markdown-it",
       "markdown-it-attrs",
+      "markdown-it-katex",
     ],
   },
   // Plugin entries (each plugin owns its own public API)
   {
     entry: {
       "plugins/shiki": "plugins/shiki/index.ts",
+      "plugins/katex": "plugins/katex/index.ts",
       "plugins/copy": "plugins/copy/index.ts",
       "plugins/image": "plugins/image/index.ts",
       "plugins/line-number": "plugins/line-number/index.ts",
@@ -81,8 +88,10 @@ export default defineConfig([
       "shiki",
       "sharp",
       "html-minifier-terser",
+      "katex",
       "markdown-it",
       "markdown-it-attrs",
+      "markdown-it-katex",
     ],
   },
 ]);

@@ -5,7 +5,7 @@
 import type { Config, Plugin, PluginAssets } from "../../src/core/types.js";
 import { DEFAULT_CONFIG } from "../../src/core/config.js";
 import { getCopyButtonScript, getLineCopyStyle, getCmdCopyStyle } from "./copy-button.js";
-import { load } from "cheerio";
+import { load, type CheerioAPI } from "cheerio";
 
 function trimTrailingEmpty(lines: string[]): string[] {
     return lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
@@ -137,11 +137,11 @@ export const copyPlugin: Plugin = {
         return runtime.enable && runtime.mode !== "off";
     },
 
-    processHtml(html, config) {
+    processDom(dom, config) {
         const { mode } = resolveCopyRuntime(config);
-        if (mode !== "line" && mode !== "cmd") return html;
+        if (mode !== "line" && mode !== "cmd") return;
 
-        const $ = load(html, {}, false);
+        const $ = dom as CheerioAPI;
         $("pre > code").each((_i, el) => {
             const codeEl = $(el);
             if (codeEl.find(".code-line").length > 0) return;
@@ -202,8 +202,6 @@ export const copyPlugin: Plugin = {
             codeEl.html(newHtml.join(""));
             codeEl.parent("pre").attr("data-cmd-copy-ready", "1");
         });
-
-        return $.html() || html;
     },
 
     getAssets(config): PluginAssets {
@@ -289,8 +287,10 @@ function resolveCopyConfig(options: CopyOptions = {}): Config {
 /** Convenience transformer: `result = await copy(result)` */
 export async function copy(html: string, options: CopyOptions = {}): Promise<string> {
     const config = resolveCopyConfig(options);
-    if (!copyPlugin.isEnabled(config) || !copyPlugin.processHtml) return html;
-    return await copyPlugin.processHtml(html, config, { sourceDir: "" });
+    if (!copyPlugin.isEnabled(config) || !copyPlugin.processDom) return html;
+    const $ = load(html, {}, false);
+    await copyPlugin.processDom($ as unknown, config, { sourceDir: "" });
+    return $.html() || html;
 }
 
 /** Plugin CSS/JS assets for host template injection. */
