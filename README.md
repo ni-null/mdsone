@@ -10,7 +10,6 @@
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/ni-null/mdsone" /></a>
 </p>
 
-
 mdsone is a Markdown conversion tool that transforms Markdown documents into fully functional, self-contained HTML files.
 
 ## Features
@@ -28,21 +27,25 @@ mdsone is a Markdown conversion tool that transforms Markdown documents into ful
 ## Quick Start
 
 Single Markdown file:
+
 ```bash
 npx mdsone README.md
 ```
 
 Specify output:
+
 ```bash
 npx mdsone README.md -o index.html
 ```
 
 Multiple Markdown files (batch mode):
+
 ```bash
 npx mdsone ./docs -o ./dist
 ```
 
 Merge multiple files into a single HTML:
+
 ```bash
 npx mdsone intro.md guide.md -m -o manual.html
 
@@ -51,11 +54,41 @@ npx mdsone ./docs -m -o manual.html
 ```
 
 With image embedding:
+
 ```bash
 npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400
 ```
 
+## CLI Parameters
 
+
+```
+Arguments:
+  inputs                                Input: single file, multiple files, or single folder path
+
+Options:
+  -v, --version                         Display version
+  -m, --merge                           Merge all inputs into a single HTML output
+  -o, --output <PATH>                   Output HTML file path
+  -f, --force                           Overwrite existing output file
+  -t, --template <NAME|PATH[@VARIANT]>  Template name/path with optional variant (e.g. normal@warm-cream)
+  --site-title <TEXT>                   Documentation site title (default: Documentation)
+  --i18n-mode [CODE]                    Enable multi-language mode; optional CODE via --i18n-mode=CODE (e.g.
+                                        --i18n-mode=zh-TW)
+  --config <PATH>                       Specify config.toml path
+  -h, --help                            display help for command
+
+Plugins:
+  --img-embed <off|base64>              Image embedding mode (use --img-embed=base64|off)
+  --img-max-width <pixels>              Max image width in pixels (requires 'sharp' package)
+  --img-compress <1-100>                Image compression quality 1-100 (requires 'sharp' package)
+  --katex [mode]                        Enable KaTeX math rendering (default: woff2; use --katex=full for full fonts)
+  --code-highlight <off>                Disable syntax highlighting (use --code-highlight=off)
+  --code-copy <off|line|cmd>            Copy button mode (use --code-copy=off|line|cmd)
+  --code-line-number [off]              Show line numbers in code blocks (use --code-line-number or --code-line-number=off)
+  --minify [off]                        Minify output HTML (default: off; use --minify or --minify=off)
+
+```
 
 ## Acknowledgements
 
@@ -69,4 +102,3 @@ mdsone is built on top of excellent open-source packages:
 - `sharp`: Optional image resize/compression during image embedding.
 - `commander`: CLI argument parsing.
 - `@iarna/toml`: `config.toml` parsing.
-

@@ -3,19 +3,19 @@
 ## Installation
 
 ```bash
-# Run via npx (recommended)
-npx mdsone [options]
+# Run directly with npx (recommended)
+npx mdsone [inputs...] [options]
 
 # Or install globally
 npm install -g mdsone
 ```
 
-## Usage Examples
+## Basic Usage
 
 ### Single Markdown File
 
 ```bash
-# Output to current directory (e.g., README.html)
+# Output README.html in current directory
 npx mdsone README.md
 
 # Specify output file
@@ -25,94 +25,88 @@ npx mdsone README.md -o index.html
 ### Multiple Markdown Files (Batch Mode)
 
 ```bash
-# Each .md produces its own .html in current directory
+# Each input file generates its own HTML
 npx mdsone a.md b.md c.md
 
-# Output to specified directory
+# Write outputs to a target directory
 npx mdsone a.md b.md -o ./dist
 ```
 
-### Folder (Batch Mode)
+### Folder Input
 
 ```bash
-# Each .md in folder produces corresponding .html (-o directory required)
+# Convert all markdown files in a folder (batch mode)
 npx mdsone ./docs -o ./dist
 ```
 
 ### Merge Mode
 
 ```bash
-# Merge multiple files → merge.html in current directory
+# Merge multiple markdown files into one HTML
 npx mdsone intro.md guide.md -m
 
-# Merge multiple files with output filename
+# Merge and specify output file
 npx mdsone intro.md guide.md -m -o manual.html
 
-# Merge entire folder
+# Merge all markdown files in a folder
 npx mdsone ./docs -m
-
-# Merge folder with output path
-npx mdsone ./docs -m -o manual.html
 ```
 
-### Image Embedding
+## Common Options
 
 ```bash
-# Embed images as base64
-npx mdsone README.md -o index.html --img-embed=base64
+# Use template + variant
+npx mdsone ./docs -m --template normal@warm-cream
 
-# Embed images with max width
-npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400
+# Enable line numbers for code blocks
+npx mdsone ./docs -m --code-line-number
 
-# Embed images with compression (requires sharp)
-npx mdsone README.md -o index.html --img-embed=base64 --img-max-width 400 --img-compress 80
+# Enable command-copy buttons
+npx mdsone ./docs -m --code-copy=cmd
+
+# Enable image embedding as base64
+npx mdsone ./docs -m --img-embed=base64
+
+# Enable KaTeX math support
+npx mdsone README.md --katex
+
+# Full KaTeX fonts (larger output)
+npx mdsone README.md --katex=full
+
+# Minify final output HTML
+npx mdsone ./docs -m --minify
 ```
 
-### Template Selection
+## Overwrite Behavior
+
+`mdsone` does not overwrite existing output files unless `-f` / `--force` is provided.
 
 ```bash
-# Specify template (with optional variant)
-npx mdsone ./docs -m -o output.html --template normal@warm-cream
+# Overwrite if target exists
+npx mdsone README.md -o output.html --force
 ```
 
-### Overwrite Protection
+## i18n Mode (Multi-language)
 
-```bash
-# Stop if output already exists
-npx mdsone README.md -o output.html -f false
-```
-
-## Two Operating Modes
-
-| Mode | Description |
-| ---- | ------------ |
-| **Batch Mode** (default) | Each Markdown file produces its own independent HTML |
-| **Merge Mode** (`-m`) | All inputs merged into a single HTML with tabs |
-
-## Multi-language Mode
-
-Organize Markdown files into `[locale]` subdirectories:
+Use locale subfolders named as `[locale]`:
 
 ```text
 docs/
-├── [zh-TW]/
-│   ├── 01_intro.md
-│   └── 02_usage.md
-└── [en]/
-    ├── 01_intro.md
-    └── 02_usage.md
+  [en]/
+    01_quickstart.md
+  [zh-TW]/
+    01_intro.md
 ```
 
-Run with `--i18n-mode` flag:
+Run:
 
 ```bash
-npx mdsone ./docs -m -o index.html --i18n-mode=en
+# Enable i18n and set default locale
+npx mdsone ./docs --i18n-mode=zh-TW -o dist/index.html
 ```
 
-## Priority Order
+## Configuration Priority
 
 ```text
-CLI arguments > Environment variables > config.toml > Default values
+CLI options > Environment variables > config.toml > Defaults
 ```
-
-

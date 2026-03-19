@@ -1,44 +1,46 @@
 # Templates
 
-## Built-in Templates
+## Built-in Template
 
-| Name      | Description |
-| --------- | ----------- |
-| `normal`  | Sidebar + TOC + theme toggle |
-| `minimal` | Clean layout for lightweight docs |
+Current built-in template:
+
+- `normal`
 
 ```bash
-npx mdsone --template normal
-npx mdsone --template minimal
+npx mdsone ./docs -m --template normal
 ```
 
 ## Template Variant
 
-Use `--template <theme-or-path>@<variant>` to select a variant defined by the template.
-If the variant does not exist, mdsone falls back to `default`.
-If `config.types.<variant>.palette` is omitted, mdsone uses the variant key as the palette name (`default` falls back to `config.palette`).
+`--template` supports this form:
+
+```text
+<theme-or-path>[@variant]
+```
+
+Examples:
 
 ```bash
 npx mdsone ./docs -m --template normal@default
 npx mdsone ./docs -m --template normal@warm-cream
-npx mdsone ./docs -m --template ./themes/dark-doc@ocean
+npx mdsone ./docs -m --template C:\themes\dark-doc@ocean
 ```
 
-## Code Highlighting (Shiki)
+If variant is missing or not found, runtime falls back to `default`.
 
-Code highlighting is handled by `plugins/shiki` during build.
-Template defaults come from `template.config.json`.
+## template.config.json
+
+Template runtime settings are defined in `template.config.json`.
 
 ```json
 {
+  "_metadata": {
+    "name": "normal",
+    "version": "1.1.0",
+    "schema_version": "v1"
+  },
   "config": {
-    "code": {
-      "Shiki": {
-        "dark": "github-dark",
-        "light": "github-light",
-        "auto_detect": true
-      }
-    },
+    "palette": "fog-gray",
     "types": {
       "default": {
         "code": {
@@ -54,6 +56,12 @@ Template defaults come from `template.config.json`.
 }
 ```
 
+Key fields:
+
+- `config.palette`: default palette key
+- `config.types`: variant map
+- `config.types.<name>.code.Shiki.dark/light/auto_detect`: Shiki theme settings by variant
+
 ## Template Structure
 
 ```text
@@ -62,28 +70,41 @@ templates/
     template.html
     style.css
     template.config.json
+    locales/
+      en.json
+      zh-TW.json
     assets/
-      01-base.css
-      10-interaction.js
+      01_base.css
+      02_behavior.js
 ```
 
-## assets/ Folder
+## assets/ Injection
 
-Files in `assets/` are auto-scanned and inline-injected:
+Files in `assets/` are inlined automatically:
 
-- `.css` files are injected into `<head>` as `<style>`
-- `.js` files are injected before `</body>` as `<script>`
-- files are sorted by filename (numeric prefixes are recommended)
+- `.css` -> injected into `<head>` as `<style>`
+- `.js` -> injected before `</body>` as `<script>`
+- sorted by filename
 
 ## template.html Placeholders
 
-| Placeholder | Replaced With |
-| ----------- | ------------- |
+| Placeholder | Replaced with |
+|---|---|
 | `{TITLE}` | Page title |
-| `{LANG}` | HTML lang attribute |
+| `{LANG}` | HTML `lang` attribute |
 | `{CSS_CONTENT}` | `style.css` content |
-| `{LIB_CSS}` | Plugin/library style bundle |
-| `{EXTRA_CSS}` | `assets/` CSS inline tags |
-| `{LIB_JS}` | Plugin/library script bundle |
-| `{EXTRA_JS}` | `assets/` JS inline tags |
-| `{MDSONE_DATA_SCRIPT}` | Document payload script |
+| `{LIB_CSS}` | Plugin CSS bundle |
+| `{EXTRA_CSS}` | Inlined extra CSS from `assets/` |
+| `{LIB_JS}` | Plugin JS bundle |
+| `{EXTRA_JS}` | Inlined extra JS from `assets/` |
+| `{MDSONE_DATA_SCRIPT}` | `window.mdsone_DATA` payload |
+
+## Custom Template Quick Start
+
+```bash
+# PowerShell
+Copy-Item -Recurse templates/normal templates/my-template
+
+# Use custom template
+npx mdsone ./docs -m --template my-template
+```
