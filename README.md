@@ -24,6 +24,9 @@ mdsone is a Markdown conversion tool that transforms Markdown documents into ful
 - ⚙️ **Flexible Configuration**: Supports TOML config files and CLI options
 - 🧰 **CLI-first workflow**: Focused on direct command-line usage for docs delivery
 
+<img width="800" height="487" alt="Snipaste_2026-03-19_17-34-40" src="https://github.com/user-attachments/assets/6b551f2a-6ddc-4578-b81a-1d132154dbfc" />
+
+
 ## Quick Start
 
 Single Markdown file:
