@@ -30,6 +30,11 @@ function normalizeKatexMode(mode: unknown): KatexMode {
   return mode === "full" ? "full" : "woff2";
 }
 
+function isKatexEnabled(config: Config): boolean {
+  // Default-on unless explicitly disabled.
+  return readKatexPluginConfig(config).enable !== false;
+}
+
 function getFontMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === ".woff2") return "font/woff2";
@@ -128,6 +133,23 @@ function loadKatexCss(mode: KatexMode): string {
   return katexCssCache.get(mode) ?? "";
 }
 
+function buildKatexStyleTag(mode: KatexMode): string {
+  const css = loadKatexCss(mode);
+  if (!css) return "";
+  return `<style id="mdsone-katex">\n${css}\n${KATEX_LAYOUT_FIX_CSS}\n</style>`;
+}
+
+function hasRenderedKatex(html: string): boolean {
+  return /class=(["'])[^"']*\bkatex(?:-display)?\b[^"']*\1/i.test(html);
+}
+
+function injectIntoHead(html: string, tag: string): string {
+  if (!tag) return html;
+  if (html.includes('id="mdsone-katex"')) return html;
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${tag}\n</head>`);
+  return `${tag}\n${html}`;
+}
+
 function applyKatexMarkdown(md: MarkdownIt): void {
   if (!cachedKatexMarkdownPlugin) {
     try {
@@ -152,21 +174,22 @@ export const katexPlugin: Plugin = {
   name: "katex",
 
   registerCli(program) {
-    const parseMode = (raw: string): "full" => {
+    const parseMode = (raw: string): "full" | "off" => {
       const v = String(raw ?? "").trim().toLowerCase();
       if (v === "full") return "full";
-      throw new Error("Invalid value for --katex. Use --katex or --katex=full.");
+      if (v === "off") return "off";
+      throw new Error("Invalid value for --katex. Use --katex, --katex=full, or --katex=off.");
     };
     program.option(
       "--katex [mode]",
-      "Enable KaTeX math rendering (default: woff2; use --katex=full for full fonts)",
+      "KaTeX mode (auto default; --katex=full for full fonts; --katex=off to disable)",
       parseMode,
     );
   },
 
   cliToConfig(opts, out) {
     const raw = opts["katex"];
-    if (raw !== true && raw !== "full") return;
+    if (raw !== true && raw !== "full" && raw !== "off") return;
     const prevPlugins = out.plugins ?? {};
     const prevConfig = prevPlugins.config ?? {};
     const prevKatex = (prevConfig["katex"] ?? {}) as Record<string, unknown>;
@@ -176,24 +199,24 @@ export const katexPlugin: Plugin = {
         ...prevConfig,
         katex: {
           ...prevKatex,
-          enable: true,
+          enable: raw !== "off",
           mode: raw === "full" ? "full" : "woff2",
         },
       },
     };
   },
 
-  isEnabled: (config) => readKatexPluginConfig(config).enable === true,
+  isEnabled: isKatexEnabled,
 
   extendMarkdown(md) {
     applyKatexMarkdown(md as MarkdownIt);
   },
 
-  getAssets(config): PluginAssets {
+  processOutputHtml(html, config) {
+    if (!hasRenderedKatex(html)) return html;
     const mode = normalizeKatexMode(readKatexPluginConfig(config).mode);
-    const css = loadKatexCss(mode);
-    if (!css) return {};
-    return { css: `<style id="mdsone-katex">\n${css}\n${KATEX_LAYOUT_FIX_CSS}\n</style>` };
+    const styleTag = buildKatexStyleTag(mode);
+    return injectIntoHead(html, styleTag);
   },
 };
 
@@ -233,6 +256,8 @@ export function extendKatexMarkdown(md: MarkdownIt, options: KatexOptions = {}):
 /** Plugin CSS assets for host template injection. */
 export async function katexAssets(options: KatexOptions = {}): Promise<PluginAssets> {
   const config = resolveKatexConfig(options);
-  if (!katexPlugin.isEnabled(config) || !katexPlugin.getAssets) return {};
-  return await katexPlugin.getAssets(config);
+  if (!katexPlugin.isEnabled(config)) return {};
+  const mode = normalizeKatexMode(readKatexPluginConfig(config).mode);
+  const styleTag = buildKatexStyleTag(mode);
+  return styleTag ? { css: styleTag } : {};
 }

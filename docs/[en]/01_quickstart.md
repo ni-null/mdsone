@@ -73,6 +73,9 @@ npx mdsone README.md --katex
 # Full KaTeX fonts (larger output)
 npx mdsone README.md --katex=full
 
+# Fully disable KaTeX
+npx mdsone README.md --katex=off
+
 # Minify final output HTML
 npx mdsone ./docs -m --minify
 ```
@@ -110,3 +113,8 @@ npx mdsone ./docs --i18n-mode=zh-TW -o dist/index.html
 ```text
 CLI options > Environment variables > config.toml > Defaults
 ```
+
+By default, KaTeX works in auto mode:
+
+- If math syntax exists, formulas are rendered.
+- If no formulas are present, no KaTeX CSS/fonts are injected.

@@ -13,9 +13,9 @@ import { DEFAULT_CONFIG } from "../../src/core/config.js";
 // [OPT-6] 靜態 CSS 提升為模組常數，避免每次 getAssets() 呼叫時重建字串
 const SHIKI_THEME_ADAPTER_CSS =
   `<style id="shiki-theme-adapter">` +
-  `html:not([data-theme="light"]) pre.shiki,` +
-  `html:not([data-theme="light"]) pre.shiki code,` +
-  `html:not([data-theme="light"]) pre.shiki span {` +
+  `html[data-theme="dark"] pre.shiki,` +
+  `html[data-theme="dark"] pre.shiki code,` +
+  `html[data-theme="dark"] pre.shiki span {` +
   `  color: var(--shiki-dark) !important;` +
   `  background-color: var(--shiki-dark-bg) !important;` +
   `  font-style: var(--shiki-dark-font-style) !important;` +

@@ -4,6 +4,7 @@
   --glow-strong: none;
   --sidebar-width: 240px;
   --grid-color: transparent;
+  --surface-shadow: none;
   /* cb-dot colors are universal (macOS traffic lights) */
   --cb-dot-red:    #d98b84;
   --cb-dot-yellow: #d8bb73;
@@ -17,6 +18,13 @@
    Each palette defines dark-mode variables by default,
    and light-mode overrides under [data-theme="light"].
 --------------------------------------------------------- */
+
+[data-theme="light"] {
+  --surface-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 12px 24px rgba(15, 23, 42, 0.07);
+}
 
 /* -- fog-gray (default) -- */
 [data-palette="fog-gray"] {
@@ -75,7 +83,8 @@
   --pre-code-color:#243040;
   --cb-bg:         #eceef0;
   --cb-border:     #d0d4d8;
-  --cb-shadow:     0 5px 14px rgba(20, 24, 32, 0.06);
+  --cb-shadow:     var(--surface-shadow);
+  --code-header-light-bg: #eef2f8;
   --cb-header-bg:  #e2e4e6;
   --cb-header-border: #d0d4d8;
   --cb-badge-bg:   rgba(37,99,235,0.08);
@@ -153,7 +162,8 @@
   --pre-code-color:#e6edf3;
   --cb-bg:         #161b26;
   --cb-border:     #21262d;
-  --cb-shadow:     0 6px 16px rgba(5, 8, 14, 0.16);
+  --cb-shadow:     var(--surface-shadow);
+  --code-header-light-bg: #e9edf6;
   --cb-header-bg:  #1c2333;
   --cb-header-border: #21262d;
   --cb-badge-bg:   rgba(68,147,248,0.10);
@@ -173,7 +183,7 @@
 }
 /* -- warm-cream -- */
 [data-palette="warm-cream"] {
-  --bg-void:       #12100d;
+  --bg-void:       #2c2822;
   --bg-deep:       #1a1612;
   --bg-surface:    #211c16;
   --bg-raised:     #27211a;
@@ -228,7 +238,8 @@
   --pre-code-color:#3a2e20;
   --cb-bg:         #f0ede6;
   --cb-border:     #d8d2c8;
-  --cb-shadow:     0 5px 14px rgba(48, 30, 16, 0.06);
+  --cb-shadow:     var(--surface-shadow);
+  --code-header-light-bg: #f6ede3;
   --cb-header-bg:  #e8e4dc;
   --cb-header-border: #d8d2c8;
   --cb-badge-bg:   rgba(176,112,64,0.08);
@@ -249,7 +260,7 @@
 
 /* -- sage-mist -- */
 [data-palette="sage-mist"] {
-  --bg-void:       #0d1210;
+  --bg-void:       #1e2623;
   --bg-deep:       #121a16;
   --bg-surface:    #16201a;
   --bg-raised:     #1a2620;
@@ -304,7 +315,8 @@
   --pre-code-color:#1e3a1e;
   --cb-bg:         #eaf2ea;
   --cb-border:     #ccdacc;
-  --cb-shadow:     0 5px 14px rgba(14, 36, 20, 0.06);
+  --cb-shadow:     var(--surface-shadow);
+  --code-header-light-bg: #e8f1e8;
   --cb-header-bg:  #daeada;
   --cb-header-border: #ccdacc;
   --cb-badge-bg:   rgba(58,122,80,0.08);
@@ -325,7 +337,7 @@
 
 /* -- soft-dusk -- */
 [data-palette="soft-dusk"] {
-  --bg-void:       #0e0d18;
+  --bg-void:       #1f1d2e;
   --bg-deep:       #131220;
   --bg-surface:    #181628;
   --bg-raised:     #1e1b30;
@@ -380,7 +392,8 @@
   --pre-code-color:#1a1860;
   --cb-bg:         #eceaf8;
   --cb-border:     #cccaf0;
-  --cb-shadow:     0 5px 14px rgba(26, 24, 68, 0.06);
+  --cb-shadow:     var(--surface-shadow);
+  --code-header-light-bg: #efecf9;
   --cb-header-bg:  #dcdcf0;
   --cb-header-border: #cccaf0;
   --cb-badge-bg:   rgba(88,72,192,0.08);
@@ -737,9 +750,9 @@ body {
   transition: background 0.35s, color 0.35s, opacity 0.35s;
 }
 
-/* Light mode: keep language label, remove header background fill */
+/* Light mode: use a unified soft header tint across all palettes */
 [data-theme="light"] .tab-content pre::before {
-  background: transparent;
+  background: var(--code-header-light-bg);
 }
 
 /* -- Traffic-light dots -- */
@@ -926,6 +939,11 @@ body {
   background: var(--bg-hover);
 }
 
+[data-theme="light"] .tab-content table,
+[data-theme="light"] .tab-content blockquote {
+  box-shadow: var(--surface-shadow);
+}
+
 /* -- THEME TOGGLE -- */
 .theme-toggle {
   display: flex;
@@ -949,6 +967,18 @@ body {
 }
 
 .theme-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--accent-primary);
+}
+
+[data-theme="light"] .theme-toggle {
+  background: var(--tab-active-bg, var(--bg-hover));
+  color: var(--text-primary);
+  border: 0;
+  box-shadow: none;
+}
+
+[data-theme="light"] .theme-toggle:hover {
   background: var(--bg-hover);
   color: var(--accent-primary);
 }
@@ -1041,9 +1071,13 @@ body {
   background: var(--bg-surface);
   border-radius: 10px;
   padding: 4px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: none;
   display: none;
   z-index: 30;
+}
+
+[data-theme="light"] .lang-menu {
+  border: 1px solid var(--border-glow);
 }
 
 .lang-switcher.open .lang-menu {

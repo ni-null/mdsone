@@ -15,10 +15,10 @@ mdsone <inputs...> [-m] [-o output_path] [-f] [options]
 | `-o, --output PATH` | 輸出路徑；合併模式為檔案，批次模式多檔 / 資料夾為目錄 | `-o dist/index.html` |
 | `-f, --force` | 是否覆蓋既有輸出（預設不覆蓋） | `-f` |
 | `-t, --template <theme-or-path>[@variant]` | 模板名稱或路徑（可附加變體） | `-t normal@warm-cream` |
-| `--site-title <TEXT>` | 文件標題 | `--site-title "My Docs"` |
+| `--title <TEXT>` | 文件標題 | `--title "My Docs"` |
 | `--minify [off]` | 壓縮輸出 HTML（預設關閉） | `--minify`、`--minify=off` |
-| `--i18n-mode [CODE]` | 啟用多國語言模式（可選 CODE 指定預設語系；指定時僅支援 `--i18n-mode=CODE`） | `--i18n-mode=zh-TW` |
-| `--config <PATH>` | 指定 `config.toml` 路徑 | `--config ./config.toml` |
+| `-i, --i18n-mode [CODE]` | 啟用多國語言模式（可選 CODE 指定預設語系；指定時僅支援 `--i18n-mode=CODE`） | `-i=zh-TW` |
+| `-c, --config <PATH>` | 指定 `config.toml` 路徑 | `-c ./config.toml` |
 | `--img-embed=<off\|base64>` | 圖片嵌入模式（預設 `off`） | `--img-embed=base64` |
 | `--img-max-width <pixels>` | 圖片最大寬度 | `--img-max-width 400` |
 | `--img-compress <1-100>` | 圖片壓縮品質 | `--img-compress 80` |
@@ -87,12 +87,12 @@ CLI 參數 > 環境變數 > config.toml > 預設值
 | Markdown 來源 | `<inputs...>` | `MARKDOWN_SOURCE_DIR` | `[paths] source` |
 | 輸出路徑 | `-o, --output` | `OUTPUT_FILE` | `[paths] output_file` |
 | 模板 | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template`（可用 `name@variant`） |
-| 文件標題 | `--site-title` | `SITE_TITLE` | `[site] title` |
+| 文件標題 | `--title` | `SITE_TITLE` | `[site] title` |
 | 壓縮 HTML | `--minify` / `--minify=off` | — | `[plugins.minify] enable` |
 | 建置日期 | — | `BUILD_DATE` | `[build] build_date` |
 | Markdown 擴充 | — | `MARKDOWN_EXTENSIONS` | `[build] markdown_extensions` |
-| 多語模式 | `--i18n-mode` | `I18N_MODE` | `[i18n] mode` |
-| 多語預設語系 | `--i18n-mode=<CODE>` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
+| 多語模式 | `-i, --i18n-mode` | `I18N_MODE` | `[i18n] mode` |
+| 多語預設語系 | `-i=<CODE>, --i18n-mode=<CODE>` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
 | 圖片嵌入模式 | `--img-embed=<off\|base64>` | `IMG_EMBED` | `[plugins.image] embed` |
 | 圖片最大寬度 | `--img-max-width` | `IMG_MAX_WIDTH` | `[plugins.image] max_width` |
 | 圖片壓縮品質 | `--img-compress` | `IMG_COMPRESS` | `[plugins.image] compress` |
@@ -127,15 +127,19 @@ npx mdsone ./docs -m --code-line-number
 
 ## KaTeX 數學公式（新）
 
-預設關閉，帶上 `--katex` 才會啟用：
+預設為自動模式（不需帶 `--katex`）：
+
+- 內容含數學公式：自動渲染並注入 KaTeX CSS/字體
+- 內容不含數學公式：不注入任何 KaTeX CSS/字體
 
 ```bash
 npx mdsone README.md -o index.html --katex
 npx mdsone README.md -o index.html --katex=full
+npx mdsone README.md -o index.html --katex=off
 ```
 
-`--katex` 預設為 `woff2` 模式；`--katex=full` 會內嵌所有 KaTeX 字型。
+參數說明：
 
-啟用後會：
-1. 在 Markdown 解析階段註冊 `markdown-it-katex`
-2. 自動把 KaTeX CSS 內嵌到輸出 HTML（單檔可離線使用）
+- `--katex`：維持自動模式（`woff2`）
+- `--katex=full`：使用完整字體（檔案較大）
+- `--katex=off`：完全關閉（不解析、不注入）

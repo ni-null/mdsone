@@ -339,7 +339,7 @@
 
         function updateThemeUI() {
           if (isDark) {
-            htmlEl.removeAttribute("data-theme")
+            htmlEl.setAttribute("data-theme", "dark")
             themeIcon.textContent = "\u263E"
             themeLabel.textContent = activeI18n.theme_light_label || "Light"
           } else {

@@ -39,8 +39,8 @@
       "warm-cream": {
         "code": {
           "Shiki": {
-            "dark": "min-dark",
-            "light": "min-light",
+            "dark": "vitesse-dark",
+            "light": "vitesse-light",
             "auto_detect": true
           }
         }
@@ -57,8 +57,8 @@
       "soft-dusk": {
         "code": {
           "Shiki": {
-            "dark": "vitesse-dark",
-            "light": "vitesse-light",
+            "dark": "min-dark",
+            "light": "min-light",
             "auto_detect": true
           }
         }

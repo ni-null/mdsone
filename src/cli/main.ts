@@ -3,8 +3,10 @@
 // ============================================================
 
 import path from "node:path";
+import { stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./args.js";
+import { createCliRenderer } from "./renderer.js";
 import { cliArgsToConfig } from "../core/config.js";
 import { validateConfig } from "../core/validator.js";
 import { resolveBuildDate } from "../core/build-date.js";
@@ -32,6 +34,33 @@ import {
 } from "../adapters/node/fs.js";
 import { PluginManager } from "../plugins/manager.js";
 import type { Config } from "../core/types.js";
+
+const cliRenderer = createCliRenderer();
+
+function stripLevelPrefix(message: string): string {
+  return message.replace(/^\[(?:ERROR|Error|WARN|INFO)\]\s*/u, "");
+}
+
+function logInfo(message: string): void {
+  console.info(cliRenderer.formatInfo(stripLevelPrefix(message)));
+}
+
+function logWarn(message: string): void {
+  console.warn(cliRenderer.formatWarn(stripLevelPrefix(message)));
+}
+
+function logError(message: string): void {
+  console.error(cliRenderer.formatError(stripLevelPrefix(message)));
+}
+
+async function getFileSizeBytes(filePath: string): Promise<number | null> {
+  try {
+    const s = await stat(filePath);
+    return s.size;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * 取得套件根目錄的絕對路徑。
@@ -81,6 +110,7 @@ function parseTemplateSpec(raw: string): { template: string; variant: string } {
 
 async function main(): Promise<void> {
   const packageRoot = resolvePackageRoot();
+  const renderer = createCliRenderer();
 
   // ① 解析 CLI 引數
   const args = parseArgs();
@@ -121,14 +151,14 @@ async function main(): Promise<void> {
   }
 
   if (inputs.length === 0) {
-    console.error("[Error] No input specified. Usage: mdsone <inputs...> [-o output_path] [-f]");
+    logError("[Error] No input specified. Usage: mdsone <inputs...> [-o output_path] [-f]");
     process.exit(1);
   }
 
   // ④ 確認每個 input 路徑存在
   for (const input of inputs) {
     if (!fileExists(input) && !dirExists(input)) {
-      console.error(`[Error] Cannot find input file/directory: ${input}`);
+      logError(`[Error] Cannot find input file/directory: ${input}`);
       process.exit(1);
     }
   }
@@ -138,12 +168,12 @@ async function main(): Promise<void> {
   const inputDirs = inputs.filter((p) => dirExists(p));
 
   if (inputFiles.length > 0 && inputDirs.length > 0) {
-    console.error("[Error] Mixed input (files and directories) is not supported. Please provide either a list of files OR a single directory.");
+    logError("[Error] Mixed input (files and directories) is not supported. Please provide either a list of files OR a single directory.");
     process.exit(1);
   }
 
   if (inputDirs.length > 1) {
-    console.error("[Error] Only a single directory is supported as input.");
+    logError("[Error] Only a single directory is supported as input.");
     process.exit(1);
   }
 
@@ -159,14 +189,14 @@ async function main(): Promise<void> {
       const msg = invalidFiles.length === inputFiles.length && inputFiles.length === 1
         ? `Expected .md or .markdown file, got '${path.extname(invalidFiles[0]) || '(no extension)'}'`
         : `Not all files are markdown: ${invalidFiles.map(p => path.basename(p)).join(', ')}`;
-      console.error(`[Error] Invalid input file(s). ${msg}`);
+      logError(`[Error] Invalid input file(s). ${msg}`);
       process.exit(1);
     }
   }
 
   // ⑤.₁ i18n 模式必須是單一資料夾
   if (config.i18n_mode && !isFolder) {
-    console.error("[Error] i18n mode only supports a single folder as input.");
+    logError("[Error] i18n mode only supports a single folder as input.");
     process.exit(1);
   }
 
@@ -175,7 +205,7 @@ async function main(): Promise<void> {
 
   // ⑤.₃ 批次資料夾模式必須明確指定 -o（輸出目錄）
   if (!mergeMode && isFolder && !args.output) {
-    console.error("[Error] Batch folder mode requires an output directory. Use '-o <dir>' to specify where HTML files should be written.");
+    logError("[Error] Batch folder mode requires an output directory. Use '-o <dir>' to specify where HTML files should be written.");
     process.exit(1);
   }
 
@@ -190,7 +220,7 @@ async function main(): Promise<void> {
       outputFile = path.resolve(process.cwd(), args.output);
       // -o 不可指向現有目錄
       if (dirExists(outputFile)) {
-        console.error(`[Error] In merge mode, '-o' must be a file path, not a directory: '${args.output}'`);
+        logError(`[Error] In merge mode, '-o' must be a file path, not a directory: '${args.output}'`);
         process.exit(1);
       }
     } else if (isFolder) {
@@ -205,7 +235,7 @@ async function main(): Promise<void> {
 
     // ⑦ 未指定 --force 時，若輸出已存在則中止
     if (!force && fileExists(outputFile)) {
-      console.error("[Error] Output file already exists. Use '--force' to overwrite.");
+      logError("[Error] Output file already exists. Use '--force' to overwrite.");
       process.exit(1);
     }
 
@@ -217,7 +247,7 @@ async function main(): Promise<void> {
     if (args.output) {
       outputFile = path.resolve(process.cwd(), args.output);
       if (dirExists(outputFile)) {
-        console.error(`[Error] Output path '${outputFile}' is an existing directory. Please specify a file path.`);
+        logError(`[Error] Output path '${outputFile}' is an existing directory. Please specify a file path.`);
         process.exit(1);
       }
     } else {
@@ -227,7 +257,7 @@ async function main(): Promise<void> {
 
     // ⑦ 未指定 --force 時，若輸出已存在則中止
     if (!force && fileExists(outputFile)) {
-      console.error("[Error] Output file already exists. Use '--force' to overwrite.");
+      logError("[Error] Output file already exists. Use '--force' to overwrite.");
       process.exit(1);
     }
 
@@ -239,12 +269,12 @@ async function main(): Promise<void> {
       outputDir = path.resolve(process.cwd(), args.output);
       // -o 不可含副檔名（代表使用者誤傳了檔案路徑）
       if (path.extname(outputDir) !== "") {
-        console.error(`[Error] In batch mode, '-o' must be a directory path, not a file path: '${args.output}'`);
+        logError(`[Error] In batch mode, '-o' must be a directory path, not a file path: '${args.output}'`);
         process.exit(1);
       }
       // -o 不可指向現有檔案
       if (fileExists(outputDir)) {
-        console.error(`[Error] Output path '${args.output}' is an existing file. Please specify a directory path.`);
+        logError(`[Error] Output path '${args.output}' is an existing file. Please specify a directory path.`);
         process.exit(1);
       }
     } else {
@@ -258,7 +288,7 @@ async function main(): Promise<void> {
   // ⑨ 驗證 template 設定（validateConfig 只驗 default_template）
   const logicResult = validateConfig(config);
   if (!logicResult.valid) {
-    for (const err of logicResult.errors) console.error(`[ERROR] ${err}`);
+    for (const err of logicResult.errors) logError(`[ERROR] ${err}`);
     process.exit(1);
   }
 
@@ -269,7 +299,7 @@ async function main(): Promise<void> {
   try {
     parsedTemplate = parseTemplateSpec(rawTemplateSpec);
   } catch (e) {
-    console.error(`[ERROR] ${e instanceof Error ? e.message : String(e)}`);
+    logError(`[ERROR] ${e instanceof Error ? e.message : String(e)}`);
     process.exit(1);
   }
 
@@ -283,8 +313,8 @@ async function main(): Promise<void> {
       ? rawTemplate
       : path.resolve(process.cwd(), rawTemplate);
     if (!isTemplateFolder(templateDir)) {
-      console.error(`[ERROR] Template folder is invalid: ${templateDir}`);
-      console.error("[ERROR] Expected files: style.css, template.html");
+      logError(`[ERROR] Template folder is invalid: ${templateDir}`);
+      logError("[ERROR] Expected files: style.css, template.html");
       process.exit(1);
     }
     templateRootDir = path.dirname(templateDir);
@@ -294,12 +324,12 @@ async function main(): Promise<void> {
   // ⑩-b 確認 template 存在
   const availableTemplates = await runAsync(() => scanTemplates(templateRootDir));
   if (availableTemplates.length === 0) {
-    console.error(`[ERROR] No templates found in: ${templateRootDir}`);
+    logError(`[ERROR] No templates found in: ${templateRootDir}`);
     process.exit(1);
   }
   if (!availableTemplates.includes(templateName)) {
-    console.error(`[ERROR] Template not found: ${templateName}`);
-    console.error(`[ERROR] Available: ${availableTemplates.join(", ")}`);
+    logError(`[ERROR] Template not found: ${templateName}`);
+    logError(`[ERROR] Available: ${availableTemplates.join(", ")}`);
     process.exit(1);
   }
 
@@ -311,13 +341,13 @@ async function main(): Promise<void> {
       templateName,
     ));
   } catch (e) {
-    console.error(`[ERROR] Failed to load template: ${e}`);
+    logError(`[ERROR] Failed to load template: ${e}`);
     process.exit(1);
   }
 
   const variantName = config.template_variant || "default";
   if (templateData.config.types && !templateData.config.types[variantName]) {
-    console.warn(`[WARN] template variant '${variantName}' not found. Falling back to 'default'.`);
+    logWarn(`[WARN] template variant '${variantName}' not found. Falling back to 'default'.`);
     config.template_variant = "default";
   }
 
@@ -345,7 +375,7 @@ async function main(): Promise<void> {
     try {
       const fileContent = await runAsync(() => readTextFile(srcFile));
       if (!fileContent.trim()) {
-        console.error("[ERROR] Markdown file is empty.");
+        logError("[ERROR] Markdown file is empty.");
         process.exit(1);
       }
 
@@ -372,7 +402,7 @@ async function main(): Promise<void> {
       htmlContent = await runAsync(() => pluginManager.processOutputHtml(htmlContent, config));
       await runAsync(() => writeOutput(outputFile, htmlContent));
     } catch (e) {
-      console.error(`[ERROR] Failed to read markdown file: ${e}`);
+      logError(`[ERROR] Failed to read markdown file: ${e}`);
       process.exit(1);
     }
   } else if (mergeMode) {
@@ -396,12 +426,12 @@ async function main(): Promise<void> {
             documents[tabName] = html;
           }
         } catch (e) {
-          console.warn(`[WARN] Failed to read ${filepath}: ${e}`);
+          logWarn(`[WARN] Failed to read ${filepath}: ${e}`);
         }
       }
 
       if (Object.keys(documents).length === 0) {
-        console.error("[ERROR] No content generated.");
+        logError("[ERROR] No content generated.");
         process.exit(1);
       }
 
@@ -421,7 +451,7 @@ async function main(): Promise<void> {
       const folderPath = inputDirs[0];
       const localeDirs = await runAsync(() => scanLocaleSubDirs(folderPath));
       if (Object.keys(localeDirs).length === 0) {
-        console.error(`[ERROR] No [locale] subdirectories found in: ${folderPath}`);
+        logError(`[ERROR] No [locale] subdirectories found in: ${folderPath}`);
         process.exit(1);
       }
 
@@ -445,7 +475,7 @@ async function main(): Promise<void> {
               localeDocs[tabName] = html;
             }
           } catch (e) {
-            console.warn(`[WARN] Failed to read ${filepath}: ${e}`);
+            logWarn(`[WARN] Failed to read ${filepath}: ${e}`);
           }
         }
         if (Object.keys(localeDocs).length > 0) {
@@ -454,7 +484,7 @@ async function main(): Promise<void> {
       }
 
       if (Object.keys(multiDocuments).length === 0) {
-        console.error("[ERROR] No content generated in i18n mode.");
+        logError("[ERROR] No content generated in i18n mode.");
         process.exit(1);
       }
 
@@ -478,7 +508,7 @@ async function main(): Promise<void> {
       const folderPath = inputDirs[0];
       const mdFiles = await runAsync(() => scanMarkdownFiles(folderPath));
       if (mdFiles.length === 0) {
-        console.error(`[ERROR] No .md files found in: ${folderPath}`);
+        logError(`[ERROR] No .md files found in: ${folderPath}`);
         process.exit(1);
       }
 
@@ -499,12 +529,12 @@ async function main(): Promise<void> {
             documents[tabName] = html;
           }
         } catch (e) {
-          console.warn(`[WARN] Failed to read ${filepath}: ${e}`);
+          logWarn(`[WARN] Failed to read ${filepath}: ${e}`);
         }
       }
 
       if (Object.keys(documents).length === 0) {
-        console.error("[ERROR] No content generated.");
+        logError("[ERROR] No content generated.");
         process.exit(1);
       }
 
@@ -542,7 +572,7 @@ async function main(): Promise<void> {
     }
 
     if (batchFiles.length === 0) {
-      console.error("[ERROR] No .md files found.");
+      logError("[ERROR] No .md files found.");
       process.exit(1);
     }
 
@@ -563,14 +593,14 @@ async function main(): Promise<void> {
 
       // 未指定 --force：目標已存在則 WARN 並跳過（不中止整批）
       if (!force && fileExists(targetFile)) {
-        console.warn(`[WARN] Skipping '${baseName}.html' — file already exists. Use '--force' to overwrite.`);
+        logWarn(`[WARN] Skipping '${baseName}.html' — file already exists. Use '--force' to overwrite.`);
         continue;
       }
 
       try {
         const content = await runAsync(() => readTextFile(filepath));
         if (!content.trim()) {
-          console.warn(`[WARN] Skipping '${path.basename(filepath)}' — file is empty.`);
+          logWarn(`[WARN] Skipping '${path.basename(filepath)}' — file is empty.`);
           continue;
         }
         let html = runSync(() => renderMarkdownWithPlugins(content, 0, baseDir));
@@ -589,20 +619,21 @@ async function main(): Promise<void> {
         await runAsync(() => writeOutput(targetFile, htmlContent));
         successCount++;
       } catch (e) {
-        console.warn(`[WARN] Failed to process '${path.basename(filepath)}': ${e}`);
+        logWarn(`[WARN] Failed to process '${path.basename(filepath)}': ${e}`);
       }
     }
 
     if (successCount === 0) {
-      console.error("[ERROR] No files were successfully converted.");
+      logError("[ERROR] No files were successfully converted.");
       process.exit(1);
     }
 
-    console.info(`[INFO] Batch complete: ${successCount}/${batchFiles.length} file(s) → ${outputDir}`);
+    logInfo(`[INFO] Batch complete: ${successCount}/${batchFiles.length} file(s) → ${outputDir}`);
   }
 
   if (mergeMode || isSingleFile) {
-    console.info(`[INFO] Output: ${outputFile}`);
+    const sizeBytes = await runAsync(() => getFileSizeBytes(outputFile));
+    console.info(cliRenderer.formatOutputLine(outputFile, sizeBytes));
   }
 }
 
@@ -614,15 +645,16 @@ async function writeOutput(outputFile: string, content: string): Promise<void> {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("EACCES") || msg.includes("EPERM")) {
-      console.error(`[Error] Permission denied: Cannot write to ${outputFile}`);
+      logError(`[Error] Permission denied: Cannot write to ${outputFile}`);
     } else {
-      console.error(`[ERROR] Failed to write output: ${e}`);
+      logError(`[ERROR] Failed to write output: ${e}`);
     }
     process.exit(1);
   }
 }
 
 main().catch((e) => {
-  console.error(`[ERROR] Unexpected error: ${e}`);
+  logError(`[ERROR] Unexpected error: ${e}`);
   process.exit(1);
 });
+

@@ -34,7 +34,7 @@ const VERSION = readPkgVersion();
 function findI18nModeSpaceArg(args: string[]): string | null {
   const localeLike = /^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*$/;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--i18n-mode") continue;
+    if (args[i] !== "--i18n-mode" && args[i] !== "-i") continue;
     const next = args[i + 1];
     if (!next) continue;
     if (next.startsWith("-")) continue;
@@ -166,11 +166,11 @@ export function parseArgs(argv?: string[]): CliArgs {
     .option("-f, --force", "Overwrite existing output file")
     // Templates & Styling
     .option("-t, --template <NAME|PATH[@VARIANT]>", "Template name/path with optional variant (e.g. normal@warm-cream)")
-    .option("--site-title <TEXT>", "Documentation site title (default: Documentation)")
+    .option("--title <TEXT>", "Documentation site title (default: Documentation)")
     // Internationalization
-    .option("--i18n-mode [CODE]", "Enable multi-language mode; optional CODE via --i18n-mode=CODE (e.g. --i18n-mode=zh-TW)")
+    .option("-i, --i18n-mode [CODE]", "Enable multi-language mode; optional CODE via --i18n-mode=CODE (e.g. --i18n-mode=zh-TW, -i=zh-TW)")
     // Config
-    .option("--config <PATH>", "Specify config.toml path")
+    .option("-c, --config <PATH>", "Specify config.toml path")
     .allowUnknownOption(false);
 
   const coreOptionFlags = new Set(program.options.map((option) => option.flags));
@@ -194,7 +194,7 @@ export function parseArgs(argv?: string[]): CliArgs {
   const badLocale = findI18nModeSpaceArg(parseInput);
   if (badLocale) {
     program.error(
-      `Invalid i18n mode syntax: '--i18n-mode ${badLocale}'. Use '--i18n-mode=${badLocale}' instead.`,
+      `Invalid i18n mode syntax. Use '--i18n-mode=${badLocale}' (or '-i=${badLocale}') instead.`,
       { exitCode: 1 },
     );
   }
@@ -234,6 +234,7 @@ export function parseArgs(argv?: string[]): CliArgs {
     output?: string;
     force?: boolean;
     template?: string;
+    title?: string;
     siteTitle?: string;
     i18nMode?: boolean | string;
     config?: string;
@@ -253,7 +254,7 @@ export function parseArgs(argv?: string[]): CliArgs {
     output: typed.output,
     force: typed.force,
     template: typed.template,
-    siteTitle: typed.siteTitle,
+    siteTitle: typed.title ?? typed.siteTitle,
     i18nMode: typed.i18nMode,
     configPath: typed.config,
     pluginOverrides,

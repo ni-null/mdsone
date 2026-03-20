@@ -15,9 +15,9 @@ mdsone <inputs...> [options]
 | `-o, --output <PATH>` | Output path. In merge mode: file path. In batch mode: file path (single file input) or directory (multi/folder input) | `-o dist/index.html` |
 | `-f, --force` | Overwrite existing output file(s) | `--force` |
 | `-t, --template <NAME|PATH[@VARIANT]>` | Template name/path with optional variant | `-t normal@warm-cream` |
-| `--site-title <TEXT>` | Site title shown in output HTML | `--site-title "My Docs"` |
-| `--i18n-mode [CODE]` | Enable i18n mode. Optional default locale with `--i18n-mode=CODE` | `--i18n-mode=zh-TW` |
-| `--config <PATH>` | Specify `config.toml` path | `--config ./config.toml` |
+| `--title <TEXT>` | Site title shown in output HTML | `--title "My Docs"` |
+| `-i, --i18n-mode [CODE]` | Enable i18n mode. Optional default locale with `--i18n-mode=CODE` | `-i=zh-TW` |
+| `-c, --config <PATH>` | Specify `config.toml` path | `-c ./config.toml` |
 
 ## Plugin Options
 
@@ -26,11 +26,17 @@ mdsone <inputs...> [options]
 | `--img-embed <off|base64>` | Image embedding mode | `--img-embed=base64` |
 | `--img-max-width <pixels>` | Max output image width (requires `sharp`) | `--img-max-width 400` |
 | `--img-compress <1-100>` | Image compression quality (requires `sharp`) | `--img-compress 80` |
-| `--katex [mode]` | Enable KaTeX math rendering (`woff2` by default; `full` for all fonts) | `--katex`, `--katex=full` |
+| `--katex [mode]` | KaTeX mode: auto/`woff2` by default, `full` for all fonts, `off` to disable | `--katex`, `--katex=full`, `--katex=off` |
 | `--code-highlight <off>` | Disable syntax highlighting | `--code-highlight=off` |
 | `--code-copy <off|line|cmd>` | Code copy button mode | `--code-copy=cmd` |
 | `--code-line-number [off]` | Enable line numbers (`=off` to disable) | `--code-line-number` |
 | `--minify [off]` | Minify final output HTML (`off` to disable) | `--minify` |
+
+KaTeX default behavior:
+
+- Without `--katex`, KaTeX stays in auto mode.
+- Formulas are rendered when math syntax is present.
+- If no formulas are rendered, no KaTeX CSS/fonts are injected.
 
 ## Strict CLI Style
 
@@ -65,9 +71,9 @@ i18n mode requires a single folder input with `[locale]` subfolders and uses mer
 | Source input | `<inputs...>` | `MARKDOWN_SOURCE_DIR` | `[paths] source` |
 | Output | `-o, --output` | `OUTPUT_FILE` | `[paths] output_file` |
 | Template | `--template` | `DEFAULT_TEMPLATE` | `[build] default_template` |
-| Site title | `--site-title` | `SITE_TITLE` | `[site] title` |
-| i18n mode | `--i18n-mode` | `I18N_MODE` | `[i18n] mode` |
-| Default locale | `--i18n-mode=CODE` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
+| Site title | `--title` | `SITE_TITLE` | `[site] title` |
+| i18n mode | `-i, --i18n-mode` | `I18N_MODE` | `[i18n] mode` |
+| Default locale | `-i=CODE, --i18n-mode=CODE` | `DEFAULT_LOCALE` | `[i18n] default_locale` |
 | Build date | - | `BUILD_DATE` | `[build] build_date` |
 | Markdown extensions | - | `MARKDOWN_EXTENSIONS` | `[build] markdown_extensions` |
 | Image embed | `--img-embed=...` | `IMG_EMBED` | `[plugins.image] embed` |

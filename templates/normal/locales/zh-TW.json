@@ -4,7 +4,7 @@
     "html_lang": "zh-TW",
     "page_subtitle": "文件中心",
     "loading": "載入中...",
-    "footer_label": "離線 - {BUILD_DATE}",
+    "footer_label": "建置 - {BUILD_DATE}",
     "menu_open_title": "開啟側邊欄",
     "breadcrumb_docs": "文件",
     "breadcrumb_index": "首頁",

@@ -4,7 +4,7 @@
     "html_lang": "en",
     "page_subtitle": "Documentation",
     "loading": "Loading...",
-    "footer_label": "Offline - {BUILD_DATE}",
+    "footer_label": "Build - {BUILD_DATE}",
     "menu_open_title": "Open sidebar",
     "breadcrumb_docs": "docs",
     "breadcrumb_index": "index",

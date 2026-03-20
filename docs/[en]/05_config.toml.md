@@ -32,7 +32,7 @@ default_locale = ""
 order = ["image", "katex", "shiki", "copy", "line_number", "minify"]
 copy = { enable = true, mode = "off" }
 shiki = { enable = true }
-katex = { enable = false, mode = "woff2" }
+katex = { enable = true, mode = "woff2" }
 line_number = { enable = false }
 image = { embed = "off", max_width = 0, compress = 0 }
 minify = { enable = false }
@@ -41,6 +41,8 @@ minify = { enable = false }
 ## Notes
 
 - No `.env` auto-loading. Runtime order is: CLI > ENV > TOML > defaults.
+- KaTeX is auto-enabled by default. Set `katex.enable = false` (or `--katex=off`) to disable completely.
+- Even when enabled, KaTeX CSS/fonts are injected only when rendered formula markup exists.
 - Shiki theme selection is controlled by template variant (`template.config.json`), not by `config.toml`.
 - `plugins.order` controls plugin execution order. `minify` is still forced to run last for output-stage processing.
 - `--template` supports `name@variant` and direct template folder path.

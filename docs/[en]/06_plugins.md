@@ -42,13 +42,14 @@ TOML:
 Purpose:
 
 - Registers `markdown-it-katex` in markdown stage.
-- Inlines KaTeX CSS into final HTML.
+- Injects KaTeX CSS/fonts only when rendered KaTeX markup exists in output HTML.
 
 CLI:
 
 ```bash
 npx mdsone README.md --katex
 npx mdsone README.md --katex=full
+npx mdsone README.md --katex=off
 ```
 
 TOML:
@@ -58,6 +59,13 @@ TOML:
 enable = true
 mode = "woff2"   # or "full"
 ```
+
+Notes:
+
+- Default is auto-enabled (`enable` behaves as true unless explicitly false).
+- `mode = "woff2"` is the default lightweight mode.
+- `mode = "full"` inlines all KaTeX fonts.
+- `enable = false` (or `--katex=off`) disables KaTeX completely.
 
 ## shiki
 
