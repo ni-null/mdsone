@@ -46,11 +46,10 @@ jobs:
         run: |
           npx --no-install mdsone \
             ./docs \
-            --i18n-mode=zh-TW \
-            --template normal \
-            --site-title "MDSone" \
+            -i \ 
+            --title "mdsone" \
             -o ./_site/index.html \
-            --force
+            -f
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
