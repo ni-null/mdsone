@@ -122,7 +122,10 @@
 
         function refreshLocaleSwitcherLabels() {
           if (langTrigger && activeLocale) {
-            langTrigger.textContent = getLocaleDisplayName(activeLocale)
+            const currentLocaleName = getLocaleDisplayName(activeLocale)
+            langTrigger.textContent = currentLocaleName
+            langTrigger.setAttribute("aria-label", currentLocaleName)
+            langTrigger.title = currentLocaleName
           }
           if (langMenu) {
             langMenu.querySelectorAll(".lang-option").forEach((el) => {
@@ -293,7 +296,10 @@
               langMenu.appendChild(item)
             })
 
-            langTrigger.textContent = getLocaleDisplayName(activeLocale)
+            const initialLocaleName = getLocaleDisplayName(activeLocale)
+            langTrigger.textContent = initialLocaleName
+            langTrigger.setAttribute("aria-label", initialLocaleName)
+            langTrigger.title = initialLocaleName
             langTrigger.addEventListener("click", (e) => {
               e.stopPropagation()
               switcher.classList.toggle("open")

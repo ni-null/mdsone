@@ -7,6 +7,16 @@
   --surface-shadow: none;
   --font-scale: 1;
   --content-max-width: 1080px;
+  --fs-ui: calc(11px * var(--font-scale));
+  --fs-tab: calc(13px * var(--font-scale));
+  --fs-body: calc(15.5px * var(--font-scale));
+  --fs-code-inline: calc(13px * var(--font-scale));
+  --fs-code-block: calc(13.5px * var(--font-scale));
+  --fs-h3: calc(1.12rem * var(--font-scale));
+  --fs-h2: calc(1.5rem * var(--font-scale));
+  --fs-h1: calc(2.55rem * var(--font-scale));
+  --fs-toc: calc(12px * var(--font-scale));
+  --lh-body: 1.95;
   /* cb-dot colors are universal (macOS traffic lights) */
   --cb-dot-red:    #d98b84;
   --cb-dot-yellow: #d8bb73;
@@ -456,7 +466,7 @@ body {
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   background-color: var(--bg-void);
   color: var(--text-primary);
-  line-height: 1.7;
+  line-height: var(--lh-body);
   overflow: hidden;
   transition:
     background-color 0.2s,
@@ -511,7 +521,7 @@ body {
 }
 
 .sidebar-subtitle {
-  font-size: 9px;
+  font-size: calc(9px * var(--font-scale));
   letter-spacing: 0.2em;
   color: var(--text-muted);
   margin-top: 6px;
@@ -548,7 +558,7 @@ body {
   cursor: pointer;
   transition: color 0.2s ease, background-color 0.2s ease;
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
-  font-size: calc(13px * var(--font-scale));
+  font-size: var(--fs-tab);
   position: relative;
   overflow: hidden;
   border-radius: 8px;
@@ -588,7 +598,7 @@ body {
 .sidebar-footer {
   padding: 14px 16px;
   border-top: 0;
-  font-size: calc(9px * var(--font-scale));
+  font-size: calc(9.5px * var(--font-scale));
   color: var(--text-muted);
   letter-spacing: 0.08em;
 }
@@ -652,9 +662,9 @@ body {
 .tab-content h1 {
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   font-weight: 800;
-  font-size: 2.4rem;
+  font-size: var(--fs-h1);
   color: var(--text-primary);
-  margin: 0 0 20px;
+  margin: 0 0 28px;
   padding-bottom: 0;
   border-bottom: 0;
   position: relative;
@@ -668,57 +678,57 @@ body {
 .tab-content h2 {
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   font-weight: 650;
-  font-size: 1.35rem;
+  font-size: var(--fs-h2);
   color: var(--text-primary);
-  margin: 32px 0 12px;
+  margin: 42px 0 16px;
   letter-spacing: 0.01em;
 }
 
 .tab-content h3 {
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: var(--fs-h3);
   color: var(--text-primary);
-  margin: 20px 0 8px;
+  margin: 28px 0 12px;
   padding-left: 0;
 }
 
 .tab-content p {
   color: var(--text-secondary);
-  margin-bottom: 16px;
-  font-size: calc(15px * var(--font-scale));
-  line-height: 1.9;
+  margin-bottom: 20px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 
 .tab-content ul {
   list-style: disc;
-  margin: 0 0 16px 0;
+  margin: 0 0 20px 0;
   padding-left: 20px;
 }
 
 .tab-content ul li {
   color: var(--text-secondary);
-  font-size: calc(15px * var(--font-scale));
-  padding: 4px 0;
+  font-size: var(--fs-body);
+  padding: 5px 0;
   position: relative;
 }
 
 .tab-content ol {
   padding-left: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   list-style: decimal;
 }
 
 .tab-content ol li {
   color: var(--text-secondary);
-  font-size: calc(15px * var(--font-scale));
-  padding: 4px 0;
+  font-size: var(--fs-body);
+  padding: 5px 0;
   position: relative;
 }
 
 .tab-content code {
   font-family: monospace;
-  font-size: calc(13px * var(--font-scale));
+  font-size: var(--fs-code-inline);
   color: var(--accent-warm);
   background: rgba(255, 170, 0, 0.08);
   border: 0;
@@ -736,7 +746,7 @@ body {
   /* padding-top reserves space for the absolute-positioned header */
   padding: 40px 0 0 0;
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   position: relative;
   box-shadow: var(--cb-shadow);
   transition: background 0.35s, box-shadow 0.35s;
@@ -798,8 +808,8 @@ body {
   border: none;
   padding: 16px 20px;
   color: var(--pre-code-color);
-  font-size: calc(13.5px * var(--font-scale));
-  line-height: 1.75;
+  font-size: var(--fs-code-block);
+  line-height: 1.8;
   overflow-x: auto;
 }
 
@@ -871,8 +881,8 @@ body {
   border: none;
   border-left: 0;
   background: var(--bg-surface);
-  padding: 8px 16px;
-  margin: 0 0 16px;
+  padding: 12px 18px;
+  margin: 0 0 22px;
   border-radius: 8px;
   font-style: normal;
   color: var(--text-secondary);
@@ -908,15 +918,15 @@ body {
   border: none;
   height: 1px;
   background: var(--bg-raised);
-  margin: 32px 0;
+  margin: 40px 0;
 }
 
 .tab-content table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  margin-bottom: 20px;
-  font-size: calc(14px * var(--font-scale));
+  margin-bottom: 26px;
+  font-size: calc(14.5px * var(--font-scale));
   border: 1px solid var(--table-border);
   border-radius: 8px;
   overflow: hidden;
@@ -928,7 +938,7 @@ body {
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   font-weight: 600;
   letter-spacing: 0.02em;
-  font-size: calc(12px * var(--font-scale));
+  font-size: var(--fs-ui);
   padding: 10px 14px;
   border: 0;
   border-right: 1px solid var(--table-border);
@@ -942,7 +952,7 @@ body {
   border-right: 1px solid var(--table-border);
   border-bottom: 1px solid var(--table-border);
   color: var(--text-secondary);
-  font-size: calc(14px * var(--font-scale));
+  font-size: calc(14.5px * var(--font-scale));
 }
 
 .tab-content th:last-child,
@@ -975,7 +985,7 @@ body {
   padding: 0;
   cursor: pointer;
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-ui);
   line-height: 1;
   color: var(--text-secondary);
   transition: color 0.2s ease, background-color 0.2s ease;
@@ -1029,7 +1039,7 @@ body {
   padding: 0 8px;
   cursor: pointer;
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-ui);
   line-height: 1;
   color: var(--text-secondary);
   transition: color 0.2s ease, background-color 0.2s ease;
@@ -1106,7 +1116,7 @@ body {
   width: 100%;
   max-width: 100%;
   padding: 0 28px 0 12px;
-  font-size: 11px;
+  font-size: var(--fs-ui);
   font-weight: 500;
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
   line-height: 1;
@@ -1163,7 +1173,7 @@ body {
   color: var(--text-secondary);
   border-radius: 8px;
   font-family: "IBM Plex Sans", "Noto Sans", "Segoe UI", sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-ui);
   font-weight: 500;
   line-height: 1;
   letter-spacing: 0.04em;
@@ -1203,7 +1213,7 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: var(--sidebar-width);
+    width: min(320px, 88vw);
     height: 100%;
     background: var(--bg-deep);
     border-right: 0;
@@ -1219,6 +1229,13 @@ body {
   }
   .content-area {
     padding: 20px;
+  }
+  .sidebar-controls {
+    gap: 6px;
+    padding: 10px 12px 12px;
+  }
+  .sidebar-controls .menu-btn {
+    display: none;
   }
   .menu-btn {
     display: flex;
@@ -1286,6 +1303,41 @@ body {
   }
 }
 
+@media (max-width: 420px) {
+  .lang-switcher {
+    flex: 0 0 32px;
+    width: 32px;
+    max-width: 32px;
+  }
+
+  .lang-switcher::after {
+    display: none;
+  }
+
+  .lang-trigger {
+    display: flex;
+    align-items: center;
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    justify-content: center;
+    text-align: center;
+    font-size: 0;
+  }
+
+  .lang-trigger::before {
+    content: "\1F310";
+    font-size: 13px;
+    line-height: 1;
+    color: currentColor;
+  }
+
+  .lang-menu {
+    left: 0;
+    min-width: 148px;
+  }
+}
+
 /* -- TOC (Table of Contents) -- */
 .toc-nav {
   max-height: 0;
@@ -1306,7 +1358,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  font-size: calc(12px * var(--font-scale));
+  font-size: var(--fs-toc);
 }
 
 .toc-item {
