@@ -28,9 +28,11 @@
         <div class="sidebar-controls">
           <button class="menu-btn" id="menu-btn" title="">&#9776;</button>
           <div class="lang-switcher" id="lang-switcher"></div>
+          <button class="font-size-toggle" id="font-size-toggle" title="">
+            <span class="font-size-label" id="font-size-label"></span>
+          </button>
           <button class="theme-toggle" id="theme-toggle" title="">
             <span class="theme-icon" id="theme-icon">&#9789;</span>
-            <span class="theme-label" id="theme-label"></span>
           </button>
         </div>
 
@@ -194,7 +196,9 @@
           document.getElementById("sidebar-footer").textContent = i18n.footer_label || ""
           if (menuBtn) menuBtn.title = i18n.menu_open_title || ""
           if (themeBtn) themeBtn.title = i18n.theme_toggle_title || ""
+          if (fontSizeBtn) fontSizeBtn.title = i18n.font_size_toggle_title || "Toggle font size"
           updateThemeUI()
+          updateFontSizeUI()
 
           docs.forEach((doc, idx) => {
             const btn = document.createElement("button")
@@ -308,23 +312,20 @@
         }
 
         const MENU_ICON = "\u2630"
-        const CLOSE_ICON = "\u2715"
 
         if (menuBtn) {
           menuBtn.addEventListener("click", () => {
             sidebar.classList.toggle("active")
-            const isActive = sidebar.classList.contains("active")
-            menuBtn.textContent = isActive ? CLOSE_ICON : MENU_ICON
-            if (mobileMenuBtn) mobileMenuBtn.textContent = isActive ? CLOSE_ICON : MENU_ICON
+            menuBtn.textContent = MENU_ICON
+            if (mobileMenuBtn) mobileMenuBtn.textContent = MENU_ICON
           })
         }
 
         if (mobileMenuBtn) {
           mobileMenuBtn.addEventListener("click", () => {
             sidebar.classList.toggle("active")
-            const isActive = sidebar.classList.contains("active")
-            mobileMenuBtn.textContent = isActive ? CLOSE_ICON : MENU_ICON
-            if (menuBtn) menuBtn.textContent = isActive ? CLOSE_ICON : MENU_ICON
+            mobileMenuBtn.textContent = MENU_ICON
+            if (menuBtn) menuBtn.textContent = MENU_ICON
           })
         }
 
@@ -334,18 +335,45 @@
 
         const themeBtn = document.getElementById("theme-toggle")
         const themeIcon = document.getElementById("theme-icon")
-        const themeLabel = document.getElementById("theme-label")
+        const fontSizeBtn = document.getElementById("font-size-toggle")
+        const fontSizeLabel = document.getElementById("font-size-label")
+        const FONT_SIZE_STORAGE_KEY = "mdsone_font_size"
+        const FONT_SIZE_MODES = ["sm", "md", "lg"]
         let isDark = config.theme_mode === "dark"
+        let fontSizeMode = normalizeFontSizeMode(localStorage.getItem(FONT_SIZE_STORAGE_KEY) || "sm")
+
+        function normalizeFontSizeMode(mode) {
+          const v = String(mode || "").toLowerCase()
+          return FONT_SIZE_MODES.includes(v) ? v : "sm"
+        }
+
+        function getFontSizeLabel(mode) {
+          if (mode === "sm") return activeI18n.font_size_small_label || "A"
+          if (mode === "lg") return activeI18n.font_size_large_label || "A++"
+          return activeI18n.font_size_medium_label || "A+"
+        }
+
+        function updateFontSizeUI() {
+          htmlEl.setAttribute("data-font-size", fontSizeMode)
+          if (fontSizeLabel) fontSizeLabel.textContent = getFontSizeLabel(fontSizeMode)
+          if (fontSizeBtn) fontSizeBtn.title = activeI18n.font_size_toggle_title || "Toggle font size"
+        }
+
+        function cycleFontSizeMode() {
+          const idx = FONT_SIZE_MODES.indexOf(fontSizeMode)
+          const nextIdx = (idx + 1) % FONT_SIZE_MODES.length
+          fontSizeMode = FONT_SIZE_MODES[nextIdx]
+          localStorage.setItem(FONT_SIZE_STORAGE_KEY, fontSizeMode)
+          updateFontSizeUI()
+        }
 
         function updateThemeUI() {
           if (isDark) {
             htmlEl.setAttribute("data-theme", "dark")
             themeIcon.textContent = "\u263E"
-            themeLabel.textContent = activeI18n.theme_light_label || "Light"
           } else {
             htmlEl.setAttribute("data-theme", "light")
             themeIcon.textContent = "\u2600"
-            themeLabel.textContent = activeI18n.theme_dark_label || "Dark"
           }
           const variantName = config.template_variant || "default"
           const variantKeyPalette = (
@@ -362,11 +390,15 @@
           htmlEl.setAttribute("data-palette", currentPalette)
         }
         updateThemeUI()
+        updateFontSizeUI()
 
         themeBtn.addEventListener("click", () => {
           isDark = !isDark
           updateThemeUI()
         })
+        if (fontSizeBtn) {
+          fontSizeBtn.addEventListener("click", cycleFontSizeMode)
+        }
 
         if (isMultiLang) {
           renderDocs(data.docs[activeLocale] || [], activeI18n)

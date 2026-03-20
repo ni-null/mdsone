@@ -12,6 +12,10 @@
     "theme_light_label": "Light",
     "theme_dark_label": "Dark",
     "theme_toggle_title": "Toggle theme",
+    "font_size_toggle_title": "Toggle font size",
+    "font_size_small_label": "A",
+    "font_size_medium_label": "A+",
+    "font_size_large_label": "A++",
     "doc_count_suffix": "doc(s)",
     "toc_title": "On this page"
   }

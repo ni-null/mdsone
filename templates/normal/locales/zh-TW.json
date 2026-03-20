@@ -12,6 +12,10 @@
     "theme_light_label": "日間",
     "theme_dark_label": "夜間",
     "theme_toggle_title": "切換日夜模式",
+    "font_size_toggle_title": "切換字體大小",
+    "font_size_small_label": "A",
+    "font_size_medium_label": "A+",
+    "font_size_large_label": "A++",
     "doc_count_suffix": "篇",
     "toc_title": "本頁目錄"
   }
