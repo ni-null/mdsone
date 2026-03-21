@@ -413,8 +413,24 @@
         }
       }
 
-      if (window.mdsone_DATA) {
-        renderApp(window.mdsone_DATA)
+      function loadInitialData() {
+        const payloadEl = document.getElementById("mdsone-data")
+        if (payloadEl && payloadEl.textContent) {
+          try {
+            return JSON.parse(payloadEl.textContent)
+          } catch (e) {
+            console.error("Failed to parse mdsone data payload", e)
+          }
+        }
+        if (window.mdsone_DATA) {
+          return window.mdsone_DATA
+        }
+        return null
+      }
+
+      const initialData = loadInitialData()
+      if (initialData) {
+        renderApp(initialData)
       }
     </script>
     {EXTRA_JS}

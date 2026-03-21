@@ -15,6 +15,19 @@ import type {
 import { assembleTemplate, buildExtraTags } from "./template.js";
 import { resolveBuildDate } from "./build-date.js";
 
+/**
+ * Escape JSON text for safe embedding inside HTML `<script>` raw-text context.
+ * This prevents accidental `</script>` termination and preserves line separators.
+ */
+function escapeJsonForHtmlScript(json: string): string {
+  return json
+    .replace(/</g, "\\u003C")
+    .replace(/>/g, "\\u003E")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 // ── DocItem 組裝 ──────────────────────────────────────────
 
 function buildDocItems(docs: Record<string, string>): DocItem[] {
@@ -55,7 +68,7 @@ function buildConfigPayload(
 // ── mdsone_DATA script 產生 ────────────────────────────────
 
 /**
- * 產生 `<script>window.mdsone_DATA = {...};</script>`（對應 Python generate_data_script()）。
+ * 產生 `<script id="mdsone-data" type="application/json">...</script>`（對應 Python generate_data_script()）。
  * 單語模式:  buildParams.documents + buildParams.i18nStrings
  * 多語模式:  buildParams.multiDocuments + buildParams.multiI18nStrings
  */
@@ -110,7 +123,8 @@ export function generateDataScript(params: BuildParams): string {
   }
 
   const json = JSON.stringify(data, null, 0);
-  return `<script>window.mdsone_DATA = ${json};</script>`;
+  const escapedJson = escapeJsonForHtmlScript(json);
+  return `<script id="mdsone-data" type="application/json">${escapedJson}</script>`;
 }
 
 // ── 主組裝 ────────────────────────────────────────────────

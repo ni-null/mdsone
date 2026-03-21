@@ -9,6 +9,8 @@ import MarkdownIt, { type Options as MarkdownItOptions } from "markdown-it";
 import markdownItAttrs from "markdown-it-attrs";
 // @ts-ignore — markdown-it-anchor 型別宣告不穩，直接忽略
 import markdownItAnchor from "markdown-it-anchor";
+// @ts-ignore — markdown-it-footnote 無官方型別宣告
+import markdownItFootnote from "markdown-it-footnote";
 
 /** `[locale]` 目錄名稱的正則（例如 [en]、[zh-TW]） */
 export const LOCALE_DIR_PATTERN = /^\[(.+)\]$/;
@@ -23,6 +25,22 @@ function makeAnchorSlugify(fileIndex: number): (s: string) => string {
   return (s: string) => {
     const slug = String(s).trim().toLowerCase().replace(/\s+/g, "-");
     return `f${fileIndex}-${slug || "heading"}`;
+  };
+}
+
+/**
+ * 對 markdown-it-footnote 的錨點命名加上 `f{fileIndex}-` 前綴，
+ * 避免多檔案合併到同一頁時，註腳 id (`fn*`, `fnref*`) 互相衝突。
+ */
+function applyFootnoteAnchorPrefix(md: MarkdownIt, fileIndex: number): void {
+  const previousAnchorNameRule = md.renderer.rules.footnote_anchor_name;
+  md.renderer.rules.footnote_anchor_name = (tokens, idx, options, env, self) => {
+    const rawName = previousAnchorNameRule
+      ? previousAnchorNameRule(tokens, idx, options, env, self)
+      : "";
+    const fallbackName = String(idx + 1);
+    const anchorName = (typeof rawName === "string" && rawName.trim()) || fallbackName;
+    return `f${fileIndex}-${anchorName}`;
   };
 }
 
@@ -58,6 +76,7 @@ export function sanitizeTableCells(html: string): string {
  *   nl2br         → breaks: true（每行換行 → <br>）
  *   attr_list     → markdown-it-attrs 插件
  *   sane_lists    → markdown-it 內建（行為差異小，以 lists: true 模擬）
+ *   footnote      → 核心固定啟用 markdown-it-footnote（不由 extensions 切換）
  *
  * @param fileIndex - 用於產生跨檔案唯一的 heading id（預設 0）
  */
@@ -79,6 +98,9 @@ function createMarkdownIt(extensions: string[], fileIndex: number): MarkdownIt {
     // 不產生錨點連結符號，保持輸出乾淨
     permalink: false,
   });
+  // 註腳功能為核心固定啟用。
+  md.use(markdownItFootnote);
+  applyFootnoteAnchorPrefix(md, fileIndex);
   return md;
 }
 

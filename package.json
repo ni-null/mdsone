@@ -80,6 +80,7 @@
     "markdown-it": "^14.0.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-attrs": "^4.1.6",
+    "markdown-it-footnote": "^4.0.0",
     "markdown-it-katex": "^2.0.3",
     "sharp": "^0.34.5",
     "shiki": "^3.14.0"

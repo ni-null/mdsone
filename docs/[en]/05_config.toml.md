@@ -41,6 +41,7 @@ minify = { enable = false }
 ## Notes
 
 - No `.env` auto-loading. Runtime order is: CLI > ENV > TOML > defaults.
+- Footnote syntax is enabled in core by default (`markdown-it-footnote`) and is not controlled by `markdown_extensions`.
 - KaTeX is auto-enabled by default. Set `katex.enable = false` (or `--katex=off`) to disable completely.
 - Even when enabled, KaTeX CSS/fonts are injected only when rendered formula markup exists.
 - Shiki theme selection is controlled by template variant (`template.config.json`), not by `config.toml`.

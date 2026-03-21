@@ -18,6 +18,7 @@ mdsone is a Markdown conversion tool that transforms Markdown documents into ful
 
 - 🚀 **Zero-dependency delivery**: No server or internet required - a single HTML file opens in any browser on any device.
 - 📝 **Markdown support**: CommonMark + markdown-it ecosystem.
+- 🔖 **Footnotes built-in**: `markdown-it-footnote` is enabled in core by default.
 - 🎨 **Built-in templates**: Responsive HTML templates included.
 - 🌍 **Internationalization**: Multi-language document support (i18n).
 - 📦 **Self-contained**: Generated HTML includes all necessary CSS and assets.
@@ -131,6 +132,7 @@ Plugins:
 mdsone is built on top of excellent open-source packages:
 
 - `markdown-it` ecosystem (`markdown-it`, `markdown-it-anchor`, `markdown-it-attrs`): Core Markdown parsing/rendering, heading ID generation, and attribute support.
+- `markdown-it-footnote`: Built-in footnote syntax support in core markdown rendering.
 - `markdown-it-katex` + `katex`: Optional math formula parsing and KaTeX HTML/CSS rendering.
 - `shiki`: High-quality syntax highlighting output.
 - `highlight.js`: Language auto-detection fallback for unlabeled code fences.
