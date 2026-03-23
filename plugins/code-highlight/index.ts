@@ -4,6 +4,8 @@
 // ============================================================
 
 import type MarkdownIt from "markdown-it";
+import { createHash } from "node:crypto";
+import { load } from "cheerio";
 import hljs from "highlight.js";
 import { createHighlighter } from "shiki";
 import type { Config, Plugin, PluginAssets, TemplateData } from "../../src/core/types.js";
@@ -86,6 +88,8 @@ const highlighterCache = new Map<string, Promise<HighlighterBundle>>();
 
 let warnedPackageMissing = false;
 let warnedAsyncHighlight = false;
+const SHIKI_STYLE_CACHE_ID = "mdsone-shiki-style-cache";
+const SHIKI_STYLE_SELECTOR = "pre.shiki[style], pre.shiki code[style], pre.shiki span[style]";
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -109,6 +113,161 @@ function escapeHtmlAttr(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function normalizeInlineStyle(style: string): string {
+  const declarations = style
+    .split(";")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .map((decl) => {
+      const idx = decl.indexOf(":");
+      if (idx === -1) return "";
+      const prop = decl.slice(0, idx).trim().toLowerCase();
+      const value = decl.slice(idx + 1).trim();
+      if (!prop || !value) return "";
+      return `${prop}:${value}`;
+    })
+    .filter(Boolean);
+
+  if (declarations.length === 0) return "";
+  return `${declarations.join(";")};`;
+}
+
+function classNameForInlineStyle(style: string): string {
+  const digest = createHash("sha1").update(style).digest("hex").slice(0, 10);
+  return `mdsone-shiki-${digest}`;
+}
+
+function buildShikiStyleRules(styleToClass: Map<string, string>): string {
+  return [...styleToClass.entries()]
+    .map(([style, className]) => `.${className}{${style}}`)
+    .join("\n");
+}
+
+function collectShikiInlineStyles(
+  dom: ReturnType<typeof load>,
+  styleToClass: Map<string, string>,
+): number {
+  let changed = 0;
+  dom(SHIKI_STYLE_SELECTOR).each((_idx, node) => {
+    const el = dom(node);
+    const rawStyle = el.attr("style");
+    if (!rawStyle) return;
+
+    const normalizedStyle = normalizeInlineStyle(rawStyle);
+    if (!normalizedStyle) {
+      el.removeAttr("style");
+      changed += 1;
+      return;
+    }
+
+    const className = styleToClass.get(normalizedStyle) ?? classNameForInlineStyle(normalizedStyle);
+    styleToClass.set(normalizedStyle, className);
+    el.addClass(className);
+    el.removeAttr("style");
+    changed += 1;
+  });
+  return changed;
+}
+
+function appendShikiStyleRules(
+  dom: ReturnType<typeof load>,
+  styleToClass: Map<string, string>,
+): void {
+  if (styleToClass.size === 0) return;
+  const ruleText = buildShikiStyleRules(styleToClass);
+  const styleHtml = `<style id="${SHIKI_STYLE_CACHE_ID}">\n${ruleText}\n</style>`;
+  const existing = dom(`style#${SHIKI_STYLE_CACHE_ID}`);
+  if (existing.length > 0) {
+    const previous = existing.html() || "";
+    existing.html(`${previous}\n${ruleText}`);
+  } else {
+    const head = dom("head");
+    if (head.length > 0) {
+      head.append(styleHtml);
+    } else {
+      dom.root().prepend(styleHtml);
+    }
+  }
+}
+
+function optimizeShikiInlineStylesFragment(
+  htmlFragment: string,
+  styleToClass: Map<string, string>,
+): string {
+  const dom = load(htmlFragment, {}, false);
+  const changed = collectShikiInlineStyles(dom, styleToClass);
+  if (changed === 0) return htmlFragment;
+  return dom.root().html() || htmlFragment;
+}
+
+function escapeJsonForHtmlScript(json: string): string {
+  return json
+    .replace(/</g, "\\u003C")
+    .replace(/>/g, "\\u003E")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+function optimizeEmbeddedDocsJson(dom: ReturnType<typeof load>, styleToClass: Map<string, string>): boolean {
+  const script = dom('script#mdsone-data[type="application/json"]');
+  if (script.length === 0) return false;
+
+  const raw = script.html() || "";
+  if (!raw.trim()) return false;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+
+  let changed = false;
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+
+    const obj = value as Record<string, unknown>;
+    for (const [key, current] of Object.entries(obj)) {
+      if (key === "html" && typeof current === "string") {
+        const optimized = optimizeShikiInlineStylesFragment(current, styleToClass);
+        if (optimized !== current) {
+          obj[key] = optimized;
+          changed = true;
+        }
+        continue;
+      }
+      visit(current);
+    }
+  };
+  visit(parsed);
+
+  if (!changed) return false;
+  script.html(escapeJsonForHtmlScript(JSON.stringify(parsed)));
+  return true;
+}
+
+function optimizeShikiInlineStyles(html: string): string {
+  const doctypeMatch = html.match(/^\s*<!doctype[^>]*>\s*/i);
+  const doctype = doctypeMatch?.[0] ?? "";
+  const source = doctype ? html.slice(doctype.length) : html;
+
+  const dom = load(source, {}, false);
+  const styleToClass = new Map<string, string>();
+  const directChanged = collectShikiInlineStyles(dom, styleToClass) > 0;
+  const jsonChanged = optimizeEmbeddedDocsJson(dom, styleToClass);
+  if (!directChanged && !jsonChanged) return html;
+
+  appendShikiStyleRules(dom, styleToClass);
+
+  const rendered = dom.html() || source;
+  return doctype ? `${doctype}${rendered}` : rendered;
 }
 
 function patchHighlightedHtml(html: string, lang: string): string {
@@ -409,6 +568,10 @@ export const codeHighlightPlugin: Plugin = {
 
   getAssets(): PluginAssets {
     return { css: SHIKI_THEME_ADAPTER_CSS };
+  },
+
+  processOutputHtml(html): string {
+    return optimizeShikiInlineStyles(html);
   },
 };
 

@@ -108,7 +108,7 @@ html[data-font-size="lg"] {
   --border-glow:   #c8cacc;
   --code-block-bg: #eceef0;
   --pre-code-color:#243040;
-  --cb-bg:         #eceef0;
+  --cb-bg:         #ffffff;
   --cb-border:     #d0d4d8;
   --cb-shadow:     var(--surface-shadow);
   --code-header-light-bg: #eef2f8;
@@ -803,7 +803,6 @@ body {
 
 /* Light mode overrides */
 .tab-content pre {
-  background: var(--cb-bg);
   border: 0;
   border-radius: 16px;
   /* padding-top reserves space for the absolute-positioned header */
@@ -813,6 +812,11 @@ body {
   position: relative;
   box-shadow: var(--cb-shadow);
   transition: background 0.35s, box-shadow 0.35s;
+}
+
+/* Let Shiki own code-block background when .shiki is present. */
+.tab-content pre:not(.shiki) {
+  background: var(--cb-bg);
 }
 
 /* -- Header background and language label -- */
