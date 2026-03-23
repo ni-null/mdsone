@@ -35,13 +35,13 @@ breaks = true
 xhtml_out = false
 
 [plugins]
-order = ["image", "katex", "code-highlight", "code-copy", "code-line-number", "minify"]
+"order" = ["image", "katex", "code-highlight", "code-copy", "code-line-number", "minify"]
 "code-copy" = { enable = true, mode = "off" }
 "code-highlight" = { enable = true }
-katex = { enable = true, mode = "woff2" }
+"katex" = { enable = true, mode = "woff2" }
 "code-line-number" = { enable = false }
-image = { embed = "off", max_width = 0, compress = 0 }
-minify = { enable = false }
+"image" = { embed = "off", max_width = 0, compress = 0 }
+"minify" = { enable = false }
 ```
 
 ## Notes

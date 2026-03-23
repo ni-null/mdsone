@@ -20,6 +20,7 @@ type KatexMode = "woff2" | "full";
 const katexCssCache = new Map<KatexMode, string>();
 const katexCssTried = new Set<KatexMode>();
 let cachedKatexMarkdownPlugin: ((...args: unknown[]) => unknown) | null = null;
+let katexMarkdownPluginPromise: Promise<((...args: unknown[]) => unknown) | null> | null = null;
 
 function readKatexPluginConfig(config: Config): KatexPluginConfig {
   const raw = config.plugins?.config?.["katex"];
@@ -83,6 +84,11 @@ function inlineKatexFontUrls(css: string, distDir: string, mode: KatexMode): str
 }
 
 function resolveKatexDistDir(): string | null {
+  const envDir = process.env.KATEX_DIST_DIR;
+  if (envDir && fs.existsSync(path.join(envDir, "katex.min.css"))) {
+    return envDir;
+  }
+
   // Prefer the same KaTeX package instance used by markdown-it-katex,
   // avoiding CSS/HTML mismatch across different KaTeX major versions.
   try {
@@ -150,19 +156,27 @@ function injectIntoHead(html: string, tag: string): string {
   return `${tag}\n${html}`;
 }
 
-function applyKatexMarkdown(md: MarkdownIt): void {
-  if (!cachedKatexMarkdownPlugin) {
-    try {
-      const mod = require("markdown-it-katex") as { default?: (...args: unknown[]) => unknown };
-      cachedKatexMarkdownPlugin = (mod.default ?? mod) as (...args: unknown[]) => unknown;
-    } catch (e) {
-      console.warn(
-        `[WARN] Plugin "katex" markdown-it-katex load failed: ${e instanceof Error ? e.message : String(e)}`,
-      );
-      return;
-    }
+async function loadKatexMarkdownPlugin(): Promise<((...args: unknown[]) => unknown) | null> {
+  if (cachedKatexMarkdownPlugin) return cachedKatexMarkdownPlugin;
+  if (!katexMarkdownPluginPromise) {
+    katexMarkdownPluginPromise = (async () => {
+      try {
+        const mod = await import("markdown-it-katex");
+        const candidate = (mod as unknown as { default?: unknown }).default ?? (mod as unknown);
+        if (typeof candidate === "function") {
+          cachedKatexMarkdownPlugin = candidate as (...args: unknown[]) => unknown;
+          return cachedKatexMarkdownPlugin;
+        }
+        throw new Error("Invalid markdown-it-katex export.");
+      } catch (e) {
+        console.warn(
+          `[WARN] Plugin "katex" markdown-it-katex load failed: ${e instanceof Error ? e.message : String(e)}`,
+        );
+        return null;
+      }
+    })();
   }
-  md.use(cachedKatexMarkdownPlugin);
+  return await katexMarkdownPluginPromise;
 }
 
 const KATEX_LAYOUT_FIX_CSS = [
@@ -208,8 +222,10 @@ export const katexPlugin: Plugin = {
 
   isEnabled: isKatexEnabled,
 
-  extendMarkdown(md) {
-    applyKatexMarkdown(md as MarkdownIt);
+  async extendMarkdown(md) {
+    const katexMdPlugin = await loadKatexMarkdownPlugin();
+    if (!katexMdPlugin) return;
+    (md as MarkdownIt).use(katexMdPlugin);
   },
 
   processOutputHtml(html, config) {
@@ -246,10 +262,15 @@ function resolveKatexConfig(options: KatexOptions = {}): Config {
 }
 
 /** Apply KaTeX markdown-it extension to an existing markdown-it instance. */
-export function extendKatexMarkdown(md: MarkdownIt, options: KatexOptions = {}): MarkdownIt {
+export async function extendKatexMarkdown(
+  md: MarkdownIt,
+  options: KatexOptions = {},
+): Promise<MarkdownIt> {
   const config = resolveKatexConfig(options);
   if (!katexPlugin.isEnabled(config)) return md;
-  applyKatexMarkdown(md);
+  const katexMdPlugin = await loadKatexMarkdownPlugin();
+  if (!katexMdPlugin) return md;
+  md.use(katexMdPlugin);
   return md;
 }
 

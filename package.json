@@ -52,6 +52,7 @@
     "build": "tsup",
     "dev": "tsx src/cli/main.ts",
     "start": "tsx src/cli/main.ts",
+    "bun:build:exe": "bun run Bun/build.mjs",
     "typecheck": "tsc --noEmit",
     "regression": "npm run build && node scripts/regression.mjs",
     "regression:update": "npm run build && node scripts/regression.mjs --update",

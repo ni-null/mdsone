@@ -50,6 +50,7 @@ export function envToConfig(): Partial<Config> {
   if (e["MARKDOWN_SOURCE_DIR"]) out.markdown_source_dir = e["MARKDOWN_SOURCE_DIR"];
   if (e["OUTPUT_FILE"]) out.output_file = e["OUTPUT_FILE"];
   if (e["TEMPLATES_DIR"]) out.templates_dir = e["TEMPLATES_DIR"];
+  if (e["LOCALES_DIR"]) out.locales_dir = e["LOCALES_DIR"];
   if (e["DEFAULT_TEMPLATE"]) out.default_template = e["DEFAULT_TEMPLATE"];
   if (e["BUILD_DATE"]) out.build_date = e["BUILD_DATE"];
   if (e["SITE_TITLE"]) out.site_title = e["SITE_TITLE"];
