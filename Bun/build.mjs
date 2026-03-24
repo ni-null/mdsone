@@ -223,8 +223,10 @@ function resolveWindowsIconPath() {
 function compileTarget(target, outFile, windowsIconPath) {
   removeFileWithRetry(outFile);
   const args = ["build", entryFile, "--compile", "--outfile", outFile, `--target=${target}`];
-  if (target.includes("windows") && windowsIconPath) {
+  if (target.includes("windows") && windowsIconPath && process.platform === "win32") {
     args.push(`--windows-icon=${windowsIconPath}`);
+  } else if (target.includes("windows") && windowsIconPath && process.platform !== "win32") {
+    console.warn("[bun-build] skip --windows-icon: only supported when compiling on Windows host");
   }
   if (process.env.BUN_COMPILE_MINIFY === "1") args.push("--minify");
   const result = spawnSync("bun", args, {
