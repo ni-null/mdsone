@@ -47,6 +47,30 @@ const BUILD_TARGETS = [
   },
 ];
 
+function resolveBuildTargets() {
+  const raw = process.env.BUN_BUILD_TARGETS?.trim();
+  if (!raw) return BUILD_TARGETS;
+
+  const wanted = new Set(
+    raw
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean)
+  );
+  if (wanted.size === 0) return BUILD_TARGETS;
+
+  const filtered = BUILD_TARGETS.filter(
+    (item) => wanted.has(item.target) || wanted.has(item.outputName)
+  );
+  if (filtered.length === 0) {
+    throw new Error(
+      `[bun-build] BUN_BUILD_TARGETS does not match any known target: ${raw}`
+    );
+  }
+
+  return filtered;
+}
+
 function sleepMs(ms) {
   const sab = new SharedArrayBuffer(4);
   const view = new Int32Array(sab);
@@ -257,6 +281,7 @@ function runPluginAssetGenerator() {
 }
 
 function run() {
+  const selectedTargets = resolveBuildTargets();
   runPluginAssetGenerator();
   const logicalPaths = collectEmbeddedLogicalPaths();
   writeGeneratedAssetsModule(logicalPaths);
@@ -267,13 +292,13 @@ function run() {
 
   console.log(`[bun-build] projectRoot: ${projectRoot}`);
   console.log(`[bun-build] embedded assets: ${logicalPaths.length}`);
-  console.log(`[bun-build] targets: ${BUILD_TARGETS.map((x) => x.target).join(", ")}`);
+  console.log(`[bun-build] targets: ${selectedTargets.map((x) => x.target).join(", ")}`);
   console.log("[bun-build] executable name by platform: win=mdsone.exe, linux=mdsone, macos=mdsone");
   if (windowsIconPath) {
     console.log(`[bun-build] windows icon: ${windowsIconPath}`);
   }
 
-  for (const item of BUILD_TARGETS) {
+  for (const item of selectedTargets) {
     const rawOutFile = path.join(TMP_DIR, item.binaryName);
     console.log(`[bun-build] compiling: ${item.target}`);
     compileTarget(item.target, rawOutFile, windowsIconPath);
