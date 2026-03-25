@@ -183,6 +183,7 @@ export function parseArgs(argv?: string[]): CliArgs {
     .description("mdsone — Convert Markdown to self-contained HTML (MCP: use `mdsone mcp`)")
     .version(VERSION, "-v, --version", "Display version")
     .argument("[inputs...]", "Input: single file, multiple files, or single folder path")
+    .option("--template-dev", "Start template development server (source checkout only)")
     // Output
     .option("-m, --merge", "Merge all inputs into a single HTML output")
     .option("-o, --output <PATH>", "Output HTML file path")
@@ -313,6 +314,7 @@ export function parseArgs(argv?: string[]): CliArgs {
   program.parse(normalizedParseInput);
   const opts = program.opts<Record<string, unknown>>();
   const typed = opts as {
+    templateDev?: boolean;
     merge?: boolean;
     output?: string;
     force?: boolean;
@@ -347,6 +349,7 @@ export function parseArgs(argv?: string[]): CliArgs {
 
   return {
     inputs,
+    templateDev: typed.templateDev,
     merge: typed.merge,
     output: typed.output,
     force: typed.force,

@@ -8,6 +8,7 @@ import { stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./args.js";
 import { CliError } from "./errors.js";
+import { runTemplateDevLauncher } from "./template-dev-launcher.js";
 import { cliArgsToConfig } from "../core/config.js";
 import { resolveBuildDate } from "../core/build-date.js";
 import { markdownToHtmlAsync } from "../core/markdown.js";
@@ -715,8 +716,14 @@ async function runBatchMode(
 }
 
 export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promise<void> {
-  const packageRoot = resolvePackageRoot();
   const args = parseArgs(argv);
+  const packageRoot = resolvePackageRoot();
+
+  if (args.templateDev) {
+    await runTemplateDevLauncher(args, logger, packageRoot);
+    return;
+  }
+
   const cliOverride = cliArgsToConfig(args);
   const toml = args.configPath
     ? await loadConfigFile(path.resolve(process.cwd(), args.configPath))

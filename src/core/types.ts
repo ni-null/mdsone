@@ -35,6 +35,7 @@ export interface Config {
 /** Parsed CLI arguments. */
 export interface CliArgs {
   inputs?: string[];
+  templateDev?: boolean;
   merge?: boolean;
   template?: string;
   output?: string;
