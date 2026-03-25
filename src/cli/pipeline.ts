@@ -142,7 +142,7 @@ function resolvePackageRoot(): string {
 function isTemplateFolder(templateDir: string): boolean {
   return (
     dirExists(templateDir) &&
-    fileExists(path.join(templateDir, "style.css")) &&
+    fileExists(path.join(templateDir, "assets", "style.css")) &&
     fileExists(path.join(templateDir, "template.html"))
   );
 }
@@ -321,7 +321,7 @@ async function resolveTemplateContext(
     if (!isTemplateFolder(templateDir)) {
       fail(
         `Template folder is invalid: ${templateDir}`,
-        ["Expected files: style.css, template.html"],
+        ["Expected files: template.html + assets/style.css"],
       );
     }
     templateRootDir = path.dirname(templateDir);

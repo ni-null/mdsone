@@ -99,7 +99,7 @@ jobs:
 
 ## CLI Parameters
 
-```
+```bash
 Arguments:
   inputs                                Input: single file, multiple files, or single folder path
 

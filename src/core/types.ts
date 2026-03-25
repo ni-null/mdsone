@@ -103,8 +103,6 @@ export interface TemplateRuntimeConfig {
 
 /** Loaded template payload. */
 export interface TemplateData {
-  /** Raw content of style.css. */
-  css: string;
   /** Raw content of template.html containing placeholders. */
   template: string;
   /** Inline SVG sprite generated from template assets/svg/*.svg. */

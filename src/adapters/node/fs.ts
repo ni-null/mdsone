@@ -194,7 +194,7 @@ export async function scanLocaleSubDirs(
   return result;
 }
 
-/** Scan template directories containing both style.css and template.html. */
+/** Scan template directories containing template.html and assets/style.css. */
 export async function scanTemplates(templatesDir: string): Promise<string[]> {
   let entries: fsSync.Dirent[];
   try {
@@ -206,7 +206,7 @@ export async function scanTemplates(templatesDir: string): Promise<string[]> {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const dir = path.join(templatesDir, entry.name);
-    const hasCss = fsSync.existsSync(path.join(dir, "style.css"));
+    const hasCss = fsSync.existsSync(path.join(dir, "assets", "style.css"));
     const hasHtml = fsSync.existsSync(path.join(dir, "template.html"));
     if (hasCss && hasHtml) names.push(entry.name);
   }
@@ -281,7 +281,13 @@ export async function loadTemplateFiles(
 ): Promise<TemplateData> {
   const templateDir = path.join(templatesDir, templateName);
 
-  const css = await readTextFile(path.join(templateDir, "style.css"));
+  const assetsDir = path.join(templateDir, "assets");
+  const assetsPrimaryCssPath = path.join(assetsDir, "style.css");
+  if (!fsSync.existsSync(assetsPrimaryCssPath)) {
+    throw new Error(
+      `Template '${templateName}' missing CSS. Expected '${assetsPrimaryCssPath}'.`,
+    );
+  }
   const template = await readTextFile(path.join(templateDir, "template.html"));
 
   // Defaults
@@ -327,7 +333,6 @@ export async function loadTemplateFiles(
   }
 
   // Load and sort assets files from template assets/
-  const assetsDir = path.join(templateDir, "assets");
   const assetsSvgDir = path.join(assetsDir, "svg");
   const assets_css: Array<{ filename: string; content: string }> = [];
   const assets_js: Array<{ filename: string; content: string }> = [];
@@ -360,7 +365,6 @@ export async function loadTemplateFiles(
   }
 
   return {
-    css,
     template,
     assets_svg_sprite,
     assets_css,

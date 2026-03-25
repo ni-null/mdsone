@@ -7,7 +7,7 @@
     "author": "mdsone"
   },
   "config": {
-    "palette": "fog-gray",
+    "palette": "mist-blue",
     "types": {
       "default": {
         "code": {
@@ -18,7 +18,7 @@
           }
         }
       },
-      "fog-gray": {
+      "mist-blue": {
         "code": {
           "Shiki": {
             "dark": "github-dark",
@@ -27,7 +27,7 @@
           }
         }
       },
-      "fog-gray-code-dark": {
+      "mist-blue-code-dark": {
         "code": {
           "Shiki": {
             "dark": "github-dark",

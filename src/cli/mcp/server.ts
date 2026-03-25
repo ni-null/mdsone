@@ -388,11 +388,11 @@ function createServer(): McpServer {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
         const templateRoot = path.join(templatesDir, entry.name);
-        const stylePath = path.join(templateRoot, "style.css");
+        const assetsStylePath = path.join(templateRoot, "assets", "style.css");
         const htmlPath = path.join(templateRoot, "template.html");
 
         try {
-          await fs.access(stylePath);
+          await fs.access(assetsStylePath);
           await fs.access(htmlPath);
           templates.push(entry.name);
 
