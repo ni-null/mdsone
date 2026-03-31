@@ -39,7 +39,10 @@ jobs:
           cache: "npm"
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2
+
+      - name: Verify Bun
+        run: bun --version
 
       - name: Install dependencies
         run: npm ci
@@ -71,7 +74,10 @@ jobs:
           cache: "npm"
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2
+
+      - name: Verify Bun
+        run: bun --version
 
       - name: Install dependencies
         run: npm ci

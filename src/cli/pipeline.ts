@@ -77,8 +77,6 @@ type RuntimeContext = {
   templateData: TemplateData;
   pluginManager: PluginManager;
   localeNames: Record<string, string>;
-  libCss: string;
-  libJs: string;
 };
 
 type LocaleFile = Awaited<ReturnType<typeof loadLocaleFile>>;
@@ -473,8 +471,6 @@ function createRuntimeContext(
   templateContext: TemplateContext,
   pluginManager: PluginManager,
   localeNames: Record<string, string>,
-  libCss: string,
-  libJs: string,
 ): RuntimeContext {
   return {
     config,
@@ -483,9 +479,28 @@ function createRuntimeContext(
     templateData: templateContext.templateData,
     pluginManager,
     localeNames,
-    libCss,
-    libJs,
   };
+}
+
+async function collectPluginAssets(
+  runtime: RuntimeContext,
+  progress?: OutputBuildProgress,
+): Promise<{ css: string; js: string }> {
+  if (progress) {
+    progressUpdate(
+      progress.logger,
+      `${progress.prefix}${progress.stepLabel} - collect plugin assets`,
+    );
+  }
+  const assetsHook: PluginProgressHook | undefined = progress
+    ? (_phase, pluginName) => {
+      progressUpdate(
+        progress.logger,
+        `${progress.prefix}${progress.stepLabel} - plugin(assets): ${pluginName}`,
+      );
+    }
+    : undefined;
+  return await runtime.pluginManager.getAssets(runtime.config, assetsHook);
 }
 
 async function renderMarkdownDocument(
@@ -568,6 +583,11 @@ async function runSingleFileMode(
   );
   const buildDate = resolveBuildDate(runtime.config);
   const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
+  const assets = await collectPluginAssets(runtime, {
+    logger,
+    prefix: "",
+    stepLabel: "Finalize single output",
+  });
 
   await buildAndWriteSingleOutput({
     config: runtime.config,
@@ -577,8 +597,8 @@ async function runSingleFileMode(
     documents,
     i18nStrings,
     localeNames: runtime.localeNames,
-    libCss: runtime.libCss,
-    libJs: runtime.libJs,
+    libCss: assets.css,
+    libJs: assets.js,
     progress: {
       logger,
       prefix: "",
@@ -626,6 +646,11 @@ async function runMergeMode(
     const buildDate = resolveBuildDate(runtime.config);
     const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
     progressUpdate(logger, "Merge step - finalize merged output");
+    const assets = await collectPluginAssets(runtime, {
+      logger,
+      prefix: "",
+      stepLabel: "Merge step",
+    });
     await buildAndWriteSingleOutput({
       config: runtime.config,
       templateData: runtime.templateData,
@@ -634,8 +659,8 @@ async function runMergeMode(
       documents,
       i18nStrings,
       localeNames: runtime.localeNames,
-      libCss: runtime.libCss,
-      libJs: runtime.libJs,
+      libCss: assets.css,
+      libJs: assets.js,
       progress: {
         logger,
         prefix: "",
@@ -708,6 +733,11 @@ async function runMergeMode(
     const buildDate = resolveBuildDate(runtime.config);
     const multiI18nStrings = getAllLocalesTemplateStrings(localeFileMap, buildDate);
     progressUpdate(logger, "Merge step - finalize i18n merged output");
+    const assets = await collectPluginAssets(runtime, {
+      logger,
+      prefix: "",
+      stepLabel: "Merge step",
+    });
     await buildAndWriteSingleOutput({
       config: runtime.config,
       templateData: runtime.templateData,
@@ -716,8 +746,8 @@ async function runMergeMode(
       multiDocuments,
       multiI18nStrings,
       localeNames: runtime.localeNames,
-      libCss: runtime.libCss,
-      libJs: runtime.libJs,
+      libCss: assets.css,
+      libJs: assets.js,
       progress: {
         logger,
         prefix: "",
@@ -767,6 +797,11 @@ async function runMergeMode(
   const buildDate = resolveBuildDate(runtime.config);
   const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
   progressUpdate(logger, "Merge step - finalize merged output");
+  const assets = await collectPluginAssets(runtime, {
+    logger,
+    prefix: "",
+    stepLabel: "Merge step",
+  });
   await buildAndWriteSingleOutput({
     config: runtime.config,
     templateData: runtime.templateData,
@@ -775,8 +810,8 @@ async function runMergeMode(
     documents,
     i18nStrings,
     localeNames: runtime.localeNames,
-    libCss: runtime.libCss,
-    libJs: runtime.libJs,
+    libCss: assets.css,
+    libJs: assets.js,
     progress: {
       logger,
       prefix: "",
@@ -854,6 +889,11 @@ async function runBatchMode(
       });
       const documents: Record<string, string> = { index: html };
       const batchConfig = { ...runtime.config, output_file: targetFile };
+      const assets = await collectPluginAssets(runtime, {
+        logger,
+        prefix,
+        stepLabel: `${sourceLabel} - finalize`,
+      });
       await buildAndWriteSingleOutput({
         config: batchConfig,
         templateData: runtime.templateData,
@@ -862,8 +902,8 @@ async function runBatchMode(
         documents,
         i18nStrings,
         localeNames: runtime.localeNames,
-        libCss: runtime.libCss,
-        libJs: runtime.libJs,
+        libCss: assets.css,
+        libJs: assets.js,
         progress: {
           logger,
           prefix,
@@ -910,11 +950,6 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
 
   progressUpdate(logger, "Loading template");
   const templateContext = await resolveTemplateContext(config, logger, packageRoot);
-  progressUpdate(logger, "Collecting plugin assets");
-  const assets = await pluginManager.getAssets(
-    config,
-    (_phase, pluginName) => progressUpdate(logger, `Collecting plugin assets - ${pluginName}`),
-  );
   progressUpdate(logger, "Loading locale name map");
   const localeNames = await loadLocaleNamesConfig(config.locales_dir);
   const runtime = createRuntimeContext(
@@ -922,8 +957,6 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
     templateContext,
     pluginManager,
     localeNames,
-    assets.css,
-    assets.js,
   );
 
   if (resolvedInputs.isSingleFile) {

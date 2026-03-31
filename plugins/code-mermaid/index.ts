@@ -48,6 +48,7 @@ const DEFAULT_THEME_LIGHT = "default";
 
 const renderCache = new Map<string, Promise<string | null>>();
 let warnedMmdcMissing = false;
+let mermaidDetectedForPendingAssets = false;
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -103,6 +104,10 @@ function resolveMermaidThemes(config: Config, context: PluginContext): MermaidTh
 
 function normalizeMermaidSource(raw: string): string {
   return raw.replace(/\r\n/g, "\n").trim();
+}
+
+function hasMermaidFence(markdownText: string): boolean {
+  return /(?:^|\n)[ \t]*(?:```|~~~)[ \t]*mermaid(?:[ \t].*)?(?:\n|$)/i.test(markdownText);
 }
 
 function cleanupSvg(raw: string): string {
@@ -385,6 +390,13 @@ export const codeMermaidPlugin: Plugin = {
     return resolveRuntime(config).enable;
   },
 
+  extendMarkdown(_md, _config, context) {
+    const markdownText = typeof context.markdownText === "string" ? context.markdownText : "";
+    if (markdownText && hasMermaidFence(markdownText)) {
+      mermaidDetectedForPendingAssets = true;
+    }
+  },
+
   async processDom(dom, config, context) {
     const $ = dom as CheerioAPI;
     const preBlocks = $("pre").toArray().filter((preNode) => {
@@ -397,6 +409,7 @@ export const codeMermaidPlugin: Plugin = {
       return /\blanguage-mermaid\b/i.test(className);
     });
     if (preBlocks.length === 0) return;
+    mermaidDetectedForPendingAssets = true;
 
     const runtime = resolveRuntime(config);
     const themes = resolveMermaidThemes(config, context);
@@ -436,6 +449,8 @@ export const codeMermaidPlugin: Plugin = {
   },
 
   getAssets(): PluginAssets {
+    if (!mermaidDetectedForPendingAssets) return {};
+    mermaidDetectedForPendingAssets = false;
     return { cssFiles: ["mermaid.css"], jsFiles: ["mermaid-theme-switch.js", "mermaid-zoom.js"] };
   },
 };
