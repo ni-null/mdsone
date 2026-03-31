@@ -35,13 +35,18 @@ import {
   dirExists,
   isMdFile,
 } from "../adapters/node/fs.js";
-import { PluginManager } from "../plugins/manager.js";
+import { PluginManager, type PluginProgressHook } from "../plugins/manager.js";
 
 export interface CliPipelineLogger {
   info: (message: string) => void;
   warn: (message: string) => void;
   error: (message: string) => void;
   outputLine: (outputPath: string, sizeBytes: number | null) => void;
+  progressStart?: (message: string) => void;
+  progressUpdate?: (message: string) => void;
+  progressSucceed?: (message: string) => void;
+  progressFail?: (message: string) => void;
+  progressStop?: () => void;
 }
 
 type ResolvedInputs = {
@@ -78,8 +83,36 @@ type RuntimeContext = {
 
 type LocaleFile = Awaited<ReturnType<typeof loadLocaleFile>>;
 
+type DocumentRenderProgress = {
+  logger: CliPipelineLogger;
+  prefix: string;
+  sourceLabel: string;
+};
+
+type OutputBuildProgress = {
+  logger: CliPipelineLogger;
+  prefix: string;
+  stepLabel: string;
+};
+
 function fail(message: string, details?: string[]): never {
   throw new CliError(message, { details });
+}
+
+function progressStart(logger: CliPipelineLogger, message: string): void {
+  logger.progressStart?.(message);
+}
+
+function progressUpdate(logger: CliPipelineLogger, message: string): void {
+  logger.progressUpdate?.(message);
+}
+
+function progressStop(logger: CliPipelineLogger): void {
+  logger.progressStop?.();
+}
+
+function fileStepPrefix(current: number, total: number): string {
+  return total > 1 ? `(${current}/${total}) ` : "";
 }
 
 function formatIssue(issue: ValidationIssue): string {
@@ -397,7 +430,14 @@ async function buildAndWriteSingleOutput(params: {
   localeNames: Record<string, string>;
   libCss: string;
   libJs: string;
+  progress?: OutputBuildProgress;
 }): Promise<void> {
+  if (params.progress) {
+    progressUpdate(
+      params.progress.logger,
+      `${params.progress.prefix}${params.progress.stepLabel} - build html`,
+    );
+  }
   const htmlRaw = buildHtml({
     config: params.config,
     templateData: params.templateData,
@@ -409,7 +449,22 @@ async function buildAndWriteSingleOutput(params: {
     libCss: params.libCss,
     libJs: params.libJs,
   });
-  const finalHtml = await params.pluginManager.processOutputHtml(htmlRaw, params.config);
+  const buildProgress = params.progress;
+  const outputHook: PluginProgressHook | undefined = buildProgress
+    ? (_phase, pluginName) => {
+      progressUpdate(
+        buildProgress.logger,
+        `${buildProgress.prefix}${buildProgress.stepLabel} - plugin(output): ${pluginName}`,
+      );
+    }
+    : undefined;
+  const finalHtml = await params.pluginManager.processOutputHtml(htmlRaw, params.config, outputHook);
+  if (params.progress) {
+    progressUpdate(
+      params.progress.logger,
+      `${params.progress.prefix}${params.progress.stepLabel} - write file`,
+    );
+  }
   await writeOutput(params.outputFile, finalHtml);
 }
 
@@ -438,7 +493,22 @@ async function renderMarkdownDocument(
   markdownText: string,
   fileIndex: number,
   sourceDir: string,
+  progress?: DocumentRenderProgress,
 ): Promise<string> {
+  if (progress) {
+    progressUpdate(
+      progress.logger,
+      `${progress.prefix}${progress.sourceLabel} - markdown parse`,
+    );
+  }
+  const extendHook: PluginProgressHook | undefined = progress
+    ? (_phase, pluginName) => {
+      progressUpdate(
+        progress.logger,
+        `${progress.prefix}${progress.sourceLabel} - plugin(extend): ${pluginName}`,
+      );
+    }
+    : undefined;
   const html = await markdownToHtmlAsync(
     markdownText,
     fileIndex,
@@ -446,13 +516,22 @@ async function renderMarkdownDocument(
       sourceDir,
       markdownText,
       templateData: runtime.templateData,
-    }),
+    }, extendHook),
     runtime.config.markdown,
   );
+  const domHook: PluginProgressHook | undefined = progress
+    ? (_phase, pluginName) => {
+      progressUpdate(
+        progress.logger,
+        `${progress.prefix}${progress.sourceLabel} - plugin(dom): ${pluginName}`,
+      );
+    }
+    : undefined;
   return await runtime.pluginManager.processHtml(
     html,
     runtime.config,
     { sourceDir, templateData: runtime.templateData },
+    domHook,
   );
 }
 
@@ -460,14 +539,27 @@ async function runSingleFileMode(
   runtime: RuntimeContext,
   inputFile: string,
   outputFile: string,
+  logger: CliPipelineLogger,
 ): Promise<void> {
+  progressUpdate(logger, `Read input: ${path.basename(inputFile)}`);
   const fileContent = await readTextFile(inputFile);
   if (!fileContent.trim()) {
     fail("Markdown file is empty.");
   }
 
-  const html = await renderMarkdownDocument(runtime, fileContent, 0, path.dirname(inputFile));
+  const html = await renderMarkdownDocument(
+    runtime,
+    fileContent,
+    0,
+    path.dirname(inputFile),
+    {
+      logger,
+      prefix: "",
+      sourceLabel: path.basename(inputFile),
+    },
+  );
   const documents: Record<string, string> = { index: html };
+  progressUpdate(logger, "Load locale/template strings");
   const localeFile = await loadMergedLocale(
     runtime.config,
     runtime.templateRootDir,
@@ -487,6 +579,11 @@ async function runSingleFileMode(
     localeNames: runtime.localeNames,
     libCss: runtime.libCss,
     libJs: runtime.libJs,
+    progress: {
+      logger,
+      prefix: "",
+      stepLabel: "Finalize single output",
+    },
   });
 }
 
@@ -498,12 +595,20 @@ async function runMergeMode(
 ): Promise<void> {
   if (inputs.isMultiFile) {
     const documents: Record<string, string> = {};
+    const totalFiles = inputs.inputFiles.length;
     for (const [i, filepath] of inputs.inputFiles.entries()) {
+      const prefix = fileStepPrefix(i + 1, totalFiles);
+      const sourceLabel = path.basename(filepath);
       const tabName = path.basename(filepath, path.extname(filepath));
       try {
+        progressUpdate(logger, `${prefix}${sourceLabel} - read`);
         const content = await readTextFile(filepath);
         if (content.trim()) {
-          documents[tabName] = await renderMarkdownDocument(runtime, content, i, path.dirname(filepath));
+          documents[tabName] = await renderMarkdownDocument(runtime, content, i, path.dirname(filepath), {
+            logger,
+            prefix,
+            sourceLabel,
+          });
         }
       } catch (e) {
         logger.warn(`Failed to read ${filepath}: ${e instanceof Error ? e.message : String(e)}`);
@@ -520,6 +625,7 @@ async function runMergeMode(
     );
     const buildDate = resolveBuildDate(runtime.config);
     const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
+    progressUpdate(logger, "Merge step - finalize merged output");
     await buildAndWriteSingleOutput({
       config: runtime.config,
       templateData: runtime.templateData,
@@ -530,6 +636,11 @@ async function runMergeMode(
       localeNames: runtime.localeNames,
       libCss: runtime.libCss,
       libJs: runtime.libJs,
+      progress: {
+        logger,
+        prefix: "",
+        stepLabel: "Merge step",
+      },
     });
     return;
   }
@@ -541,16 +652,36 @@ async function runMergeMode(
       fail(`No [locale] subdirectories found in: ${folderPath}`);
     }
 
-    const multiDocuments: Record<string, Record<string, string>> = {};
+    const localeEntries: Array<{
+      locale: string;
+      dir: string;
+      mdFiles: Awaited<ReturnType<typeof scanMarkdownFiles>>;
+    }> = [];
+    let totalFiles = 0;
     for (const [locale, dir] of Object.entries(localeDirs)) {
       const mdFiles = await scanMarkdownFiles(dir);
+      totalFiles += mdFiles.length;
+      localeEntries.push({ locale, dir, mdFiles });
+    }
+
+    const multiDocuments: Record<string, Record<string, string>> = {};
+    let processed = 0;
+    for (const { locale, dir, mdFiles } of localeEntries) {
       const localeDocs: Record<string, string> = {};
       for (const [idx, { filename, filepath }] of mdFiles.entries()) {
+        processed += 1;
+        const prefix = fileStepPrefix(processed, totalFiles);
+        const sourceLabel = `${locale}/${filename}`;
         const tabName = filename.replace(/\.(md|markdown)$/i, "");
         try {
+          progressUpdate(logger, `${prefix}${sourceLabel} - read`);
           const content = await readTextFile(filepath);
           if (content.trim()) {
-            localeDocs[tabName] = await renderMarkdownDocument(runtime, content, idx, dir);
+            localeDocs[tabName] = await renderMarkdownDocument(runtime, content, idx, dir, {
+              logger,
+              prefix,
+              sourceLabel,
+            });
           }
         } catch (e) {
           logger.warn(`Failed to read ${filepath}: ${e instanceof Error ? e.message : String(e)}`);
@@ -576,6 +707,7 @@ async function runMergeMode(
     }
     const buildDate = resolveBuildDate(runtime.config);
     const multiI18nStrings = getAllLocalesTemplateStrings(localeFileMap, buildDate);
+    progressUpdate(logger, "Merge step - finalize i18n merged output");
     await buildAndWriteSingleOutput({
       config: runtime.config,
       templateData: runtime.templateData,
@@ -586,6 +718,11 @@ async function runMergeMode(
       localeNames: runtime.localeNames,
       libCss: runtime.libCss,
       libJs: runtime.libJs,
+      progress: {
+        logger,
+        prefix: "",
+        stepLabel: "Merge step",
+      },
     });
     return;
   }
@@ -597,12 +734,20 @@ async function runMergeMode(
   }
 
   const documents: Record<string, string> = {};
+  const totalFiles = mdFiles.length;
   for (const [idx, { filename, filepath }] of mdFiles.entries()) {
+    const prefix = fileStepPrefix(idx + 1, totalFiles);
+    const sourceLabel = filename;
     const tabName = filename.replace(/\.(md|markdown)$/i, "");
     try {
+      progressUpdate(logger, `${prefix}${sourceLabel} - read`);
       const content = await readTextFile(filepath);
       if (content.trim()) {
-        documents[tabName] = await renderMarkdownDocument(runtime, content, idx, folderPath);
+        documents[tabName] = await renderMarkdownDocument(runtime, content, idx, folderPath, {
+          logger,
+          prefix,
+          sourceLabel,
+        });
       }
     } catch (e) {
       logger.warn(`Failed to read ${filepath}: ${e instanceof Error ? e.message : String(e)}`);
@@ -621,6 +766,7 @@ async function runMergeMode(
   );
   const buildDate = resolveBuildDate(runtime.config);
   const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
+  progressUpdate(logger, "Merge step - finalize merged output");
   await buildAndWriteSingleOutput({
     config: runtime.config,
     templateData: runtime.templateData,
@@ -631,6 +777,11 @@ async function runMergeMode(
     localeNames: runtime.localeNames,
     libCss: runtime.libCss,
     libJs: runtime.libJs,
+    progress: {
+      logger,
+      prefix: "",
+      stepLabel: "Merge step",
+    },
   });
 }
 
@@ -677,19 +828,30 @@ async function runBatchMode(
   const i18nStrings = getAllTemplateStrings(localeFile, buildDate);
 
   let successCount = 0;
-  for (const { filepath, baseName, baseDir } of batchFiles) {
+  const totalFiles = batchFiles.length;
+  for (const [idx, { filepath, baseName, baseDir }] of batchFiles.entries()) {
+    const prefix = fileStepPrefix(idx + 1, totalFiles);
+    const sourceLabel = path.basename(filepath);
     const targetFile = path.join(outputPlan.outputDir, `${baseName}.html`);
+
     if (!outputPlan.force && fileExists(targetFile)) {
-      logger.warn(`Skipping '${baseName}.html' — file already exists. Use '--force' to overwrite.`);
+      logger.warn(`${prefix}Skipping '${baseName}.html' because file already exists. Use '--force' to overwrite.`);
       continue;
     }
+
     try {
+      progressUpdate(logger, `${prefix}${sourceLabel} - read`);
       const content = await readTextFile(filepath);
       if (!content.trim()) {
-        logger.warn(`Skipping '${path.basename(filepath)}' — file is empty.`);
+        logger.warn(`${prefix}Skipping '${path.basename(filepath)}' because file is empty.`);
         continue;
       }
-      const html = await renderMarkdownDocument(runtime, content, 0, baseDir);
+
+      const html = await renderMarkdownDocument(runtime, content, 0, baseDir, {
+        logger,
+        prefix,
+        sourceLabel,
+      });
       const documents: Record<string, string> = { index: html };
       const batchConfig = { ...runtime.config, output_file: targetFile };
       await buildAndWriteSingleOutput({
@@ -702,24 +864,29 @@ async function runBatchMode(
         localeNames: runtime.localeNames,
         libCss: runtime.libCss,
         libJs: runtime.libJs,
+        progress: {
+          logger,
+          prefix,
+          stepLabel: `${sourceLabel} - finalize`,
+        },
       });
       successCount++;
     } catch (e) {
-      logger.warn(`Failed to process '${path.basename(filepath)}': ${e instanceof Error ? e.message : String(e)}`);
+      logger.warn(`${prefix}Failed to process '${path.basename(filepath)}': ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
   if (successCount === 0) {
     fail("No files were successfully converted.");
   }
-  logger.info(`Batch complete: ${successCount}/${batchFiles.length} file(s) → ${outputPlan.outputDir}`);
 }
-
 export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promise<void> {
+  progressStart(logger, "Initializing CLI");
   const args = parseArgs(argv);
   const packageRoot = resolvePackageRoot();
 
   if (args.templateDev) {
+    progressStop(logger);
     await runTemplateDevLauncher(args, logger, packageRoot);
     return;
   }
@@ -729,17 +896,26 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
     ? await loadConfigFile(path.resolve(process.cwd(), args.configPath))
     : {};
 
+  progressUpdate(logger, "Loading config");
   const config = buildConfig(toml, cliOverride);
   normalizeConfigPaths(config, packageRoot);
 
+  progressUpdate(logger, "Resolving inputs");
   const resolvedInputs = classifyInputs(args, resolveInputs(args, config), config);
   const outputPlan = resolveOutputPlan(args, config, resolvedInputs);
 
   const pluginManager = new PluginManager();
+  progressUpdate(logger, "Preflight validation");
   runPreflightValidation(config, pluginManager, logger);
 
+  progressUpdate(logger, "Loading template");
   const templateContext = await resolveTemplateContext(config, logger, packageRoot);
-  const assets = await pluginManager.getAssets(config);
+  progressUpdate(logger, "Collecting plugin assets");
+  const assets = await pluginManager.getAssets(
+    config,
+    (_phase, pluginName) => progressUpdate(logger, `Collecting plugin assets - ${pluginName}`),
+  );
+  progressUpdate(logger, "Loading locale name map");
   const localeNames = await loadLocaleNamesConfig(config.locales_dir);
   const runtime = createRuntimeContext(
     config,
@@ -751,7 +927,7 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
   );
 
   if (resolvedInputs.isSingleFile) {
-    await runSingleFileMode(runtime, resolvedInputs.inputFiles[0], outputPlan.outputFile);
+    await runSingleFileMode(runtime, resolvedInputs.inputFiles[0], outputPlan.outputFile, logger);
   } else if (resolvedInputs.mergeMode) {
     await runMergeMode(runtime, resolvedInputs, outputPlan.outputFile, logger);
   } else {
@@ -762,4 +938,5 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
     const sizeBytes = await getFileSizeBytes(outputPlan.outputFile);
     logger.outputLine(outputPlan.outputFile, sizeBytes);
   }
+  progressStop(logger);
 }

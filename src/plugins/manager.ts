@@ -8,6 +8,11 @@ import type { Config, Plugin, PluginContext, ValidationIssue } from "../core/typ
 import { builtInPlugins } from "./index.js";
 import { listPluginAssets, resolvePluginAsset, type PluginAssetKind } from "./asset-registry.js";
 
+export type PluginProgressHook = (
+  phase: "assets" | "extend-markdown" | "process-dom" | "process-output",
+  pluginName: string,
+) => void;
+
 function wrapCssAssetTag(assetPath: string, content: string): string {
   return `<style>/* ${assetPath} */\n${content}\n</style>`;
 }
@@ -73,6 +78,7 @@ export class PluginManager {
     markdownIt: unknown,
     config: Config,
     context: PluginContext,
+    progressHook?: PluginProgressHook,
   ): Promise<void> {
     const ordered = sortPlugins(
       [...this.plugins],
@@ -80,6 +86,7 @@ export class PluginManager {
     );
     for (const plugin of ordered) {
       if (!plugin.isEnabled(config) || !plugin.extendMarkdown) continue;
+      progressHook?.("extend-markdown", plugin.name);
       try {
         await plugin.extendMarkdown(markdownIt, config, context);
       } catch (e) {
@@ -98,6 +105,7 @@ export class PluginManager {
     html: string,
     config: Config,
     context: PluginContext,
+    progressHook?: PluginProgressHook,
   ): Promise<string> {
     const ordered = sortPlugins(
       [...this.plugins],
@@ -108,6 +116,7 @@ export class PluginManager {
     if (enabled.length === 0) return html;
     const dom = load(html, {}, false);
     for (const plugin of enabled) {
+      progressHook?.("process-dom", plugin.name);
       try {
         await plugin.processDom!(dom as unknown, config, context);
       } catch (e) {
@@ -128,6 +137,7 @@ export class PluginManager {
   async processOutputHtml(
     html: string,
     config: Config,
+    progressHook?: PluginProgressHook,
   ): Promise<string> {
     let result = html;
     const ordered = sortOutputPlugins(
@@ -138,6 +148,7 @@ export class PluginManager {
     );
     for (const plugin of ordered) {
       if (plugin.isEnabled(config) && plugin.processOutputHtml) {
+        progressHook?.("process-output", plugin.name);
         try {
           result = await plugin.processOutputHtml(result, config);
         } catch (e) {
@@ -154,7 +165,10 @@ export class PluginManager {
    * Collect plugin assets and merge to a single `{ css, js }` payload.
    * Failures are logged and do not stop the remaining plugins.
    */
-  async getAssets(config: Config): Promise<{ css: string; js: string }> {
+  async getAssets(
+    config: Config,
+    progressHook?: PluginProgressHook,
+  ): Promise<{ css: string; js: string }> {
     const cssParts: string[] = [];
     const jsParts: string[] = [];
 
@@ -164,6 +178,7 @@ export class PluginManager {
     );
     for (const plugin of ordered) {
       if (!plugin.isEnabled(config)) continue;
+      progressHook?.("assets", plugin.name);
 
       try {
         // Default mode: when plugin does not implement getAssets(), load all assets/*
