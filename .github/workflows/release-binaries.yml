@@ -24,10 +24,10 @@ permissions:
   contents: read
 
 jobs:
-  build-unix:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
     env:
-      BUN_BUILD_TARGETS: bun-linux-x64,bun-darwin-x64,bun-darwin-arm64
+      BUN_BUILD_TARGETS: bun-windows-x64,bun-linux-x64,bun-darwin-x64,bun-darwin-arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,54 +47,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Bun binaries
+      - name: Build all Bun binaries
         run: npm run bun:build:exe
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bun-binaries-unix
+          name: bun-binaries-all
           path: |
+            Bun/dist/mdsone-win-x64.exe
             Bun/dist/mdsone-linux-x64
             Bun/dist/mdsone-macos-x64
             Bun/dist/mdsone-macos-arm64
 
-  build-windows:
-    runs-on: windows-latest
-    env:
-      BUN_BUILD_TARGETS: bun-windows-x64
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install Bun (npm)
-        run: npm install -g bun@1.3.11
-
-      - name: Verify Bun
-        run: bun --version
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Windows binary (with icon)
-        run: npm run bun:build:exe
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: bun-binaries-windows
-          path: |
-            Bun/dist/mdsone-win-x64.exe
-
   release:
     needs:
-      - build-unix
       - build-windows
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_release == 'true' && github.event.inputs.tag_name != '') }}
     runs-on: ubuntu-latest
