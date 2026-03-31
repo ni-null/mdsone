@@ -39,7 +39,7 @@ jobs:
           cache: "npm"
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2
+        uses: oven-sh/setup-bun@v2.2.0
 
       - name: Verify Bun
         run: bun --version
@@ -74,7 +74,7 @@ jobs:
           cache: "npm"
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.2
+        uses: oven-sh/setup-bun@v2.1.2
 
       - name: Verify Bun
         run: bun --version
