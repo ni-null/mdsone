@@ -64,6 +64,21 @@ function resolveFileSystemAsset(
   return null;
 }
 
+function resolvePluginLocalAsset(
+  pluginName: string,
+  assetPath: string,
+): { assetPath: string; content: string } | null {
+  const normalizedPath = normalizeAssetPath(assetPath);
+  const absPath = path.resolve(process.cwd(), "plugins", pluginName, "assets", normalizedPath);
+  try {
+    if (!fs.existsSync(absPath) || !fs.statSync(absPath).isFile()) return null;
+    const content = stripBom(fs.readFileSync(absPath, "utf8"));
+    return { assetPath: normalizedPath, content };
+  } catch {
+    return null;
+  }
+}
+
 export function resolveGeneratedPluginAsset(
   pluginName: string,
   kind: PluginAssetKind,
@@ -124,7 +139,9 @@ export function resolvePluginAsset(
   assetPath: string,
 ): { assetPath: string; content: string } | null {
   return (
-    resolveGeneratedPluginAsset(pluginName, kind, assetPath)
+    // Prefer local plugin assets in dev so plugin CSS/JS edits take effect immediately.
+    resolvePluginLocalAsset(pluginName, assetPath)
     ?? resolveFileSystemAsset(assetPath)
+    ?? resolveGeneratedPluginAsset(pluginName, kind, assetPath)
   );
 }

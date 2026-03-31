@@ -79,6 +79,12 @@ export interface TemplateMetadata {
   author?: string;
 }
 
+/** Mermaid theme selection for dark/light rendering. */
+export interface MermaidThemeConfig {
+  dark?: string;
+  light?: string;
+}
+
 /** Template-level runtime overrides. */
 export interface TemplateRuntimeConfig {
   palette?: string;
@@ -88,6 +94,7 @@ export interface TemplateRuntimeConfig {
       light?: string;
       auto_detect?: boolean;
     };
+    mermaid?: MermaidThemeConfig;
   };
   types?: Record<string, {
     palette?: string;
@@ -97,6 +104,7 @@ export interface TemplateRuntimeConfig {
         light?: string;
         auto_detect?: boolean;
       };
+      mermaid?: MermaidThemeConfig;
     };
   }>;
 }

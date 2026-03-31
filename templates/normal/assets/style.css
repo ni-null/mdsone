@@ -1082,6 +1082,14 @@ body {
   min-width: 100%;
 }
 
+/* Keep figure content scrollable when media is enlarged by font-size mode. */
+.tab-content figure {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 
 /* -- THEME TOGGLE -- */
 .theme-toggle {

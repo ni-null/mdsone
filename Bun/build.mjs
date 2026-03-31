@@ -20,6 +20,7 @@ const EMBED_ROOT_TEMPLATES = "templates";
 const EMBED_ROOT_LOCALES = "locales";
 const EMBED_ROOT_KATEX = "node_modules/katex/dist";
 const TMP_DIR = path.join(bunDir, "_tmp_compile");
+const BUN_RUNTIME_TMP_DIR = path.join(bunDir, "_tmp_bun_runtime");
 const WINDOWS_ICON_SOURCE = path.join(projectRoot, "logo", "mdsone.ico");
 const GENERATED_WINDOWS_ICON = path.join(generatedDir, "mdsone_icon.ico");
 const PLUGIN_ASSET_GENERATOR = path.join(projectRoot, "scripts", "generate-plugin-assets.mjs");
@@ -253,13 +254,37 @@ function compileTarget(target, outFile, windowsIconPath) {
     console.warn("[bun-build] skip --windows-icon: only supported when compiling on Windows host");
   }
   if (process.env.BUN_COMPILE_MINIFY === "1") args.push("--minify");
-  const result = spawnSync("bun", args, {
-    cwd: projectRoot,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+
+  const env = {
+    ...process.env,
+    TMP: BUN_RUNTIME_TMP_DIR,
+    TEMP: BUN_RUNTIME_TMP_DIR,
+    TMPDIR: BUN_RUNTIME_TMP_DIR,
+  };
+
+  const maxAttempts = Math.max(1, Number(process.env.BUN_COMPILE_RETRY ?? "3") || 3);
+  let lastStatus = 1;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = spawnSync("bun", args, {
+      cwd: projectRoot,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+      env,
+    });
+    const status = result.status ?? 1;
+    if (status === 0) {
+      lastStatus = 0;
+      break;
+    }
+    lastStatus = status;
+    if (attempt < maxAttempts) {
+      console.warn(`[bun-build] compile failed (${target}), retry ${attempt}/${maxAttempts - 1}...`);
+      sleepMs(250 * attempt);
+    }
+  }
+
+  if (lastStatus !== 0) {
+    process.exit(lastStatus);
   }
   try {
     fs.chmodSync(outFile, 0o755);
@@ -289,6 +314,7 @@ function run() {
 
   ensureDir(distDir);
   ensureDir(TMP_DIR);
+  ensureDir(BUN_RUNTIME_TMP_DIR);
 
   console.log(`[bun-build] projectRoot: ${projectRoot}`);
   console.log(`[bun-build] embedded assets: ${logicalPaths.length}`);
@@ -310,6 +336,7 @@ function run() {
   }
 
   removeDirWithRetry(TMP_DIR);
+  removeDirWithRetry(BUN_RUNTIME_TMP_DIR);
 
   console.log(`[bun-build] generated: ${generatedAssetsFile}`);
   console.log("[bun-build] done");

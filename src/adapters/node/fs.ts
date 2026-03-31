@@ -26,6 +26,14 @@ function parseShikiSettings(raw: unknown): { dark?: string; light?: string; auto
   return { dark, light, auto_detect: autoDetect };
 }
 
+function parseMermaidSettings(raw: unknown): { dark?: string; light?: string } | undefined {
+  const obj = asObject(raw);
+  const dark = typeof obj["dark"] === "string" ? obj["dark"] : undefined;
+  const light = typeof obj["light"] === "string" ? obj["light"] : undefined;
+  if (!dark && !light) return undefined;
+  return { dark, light };
+}
+
 function escapeHtmlAttr(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -308,6 +316,19 @@ export async function loadTemplateFiles(
       if (rootPalette) {
         template_config = { ...template_config, palette: rootPalette };
       }
+      const rootCode = asObject(cfgRaw["code"]);
+      const rootShiki = parseShikiSettings(rootCode["Shiki"] ?? rootCode["shiki"]);
+      const rootMermaid = parseMermaidSettings(rootCode["mermaid"] ?? rootCode["Mermaid"]);
+      if (rootShiki || rootMermaid) {
+        template_config = {
+          ...template_config,
+          code: {
+            ...(template_config.code ?? {}),
+            ...(rootShiki ? { Shiki: rootShiki } : {}),
+            ...(rootMermaid ? { mermaid: rootMermaid } : {}),
+          },
+        };
+      }
 
       const parsedTypes: NonNullable<TemplateData["config"]["types"]> = {};
       const typesRaw = asObject(cfgRaw["types"]);
@@ -315,11 +336,19 @@ export async function loadTemplateFiles(
         const typeObj = asObject(typeValue);
         const typeCode = asObject(typeObj["code"]);
         const typeShiki = parseShikiSettings(typeCode["Shiki"] ?? typeCode["shiki"]);
+        const typeMermaid = parseMermaidSettings(typeCode["mermaid"] ?? typeCode["Mermaid"]);
         const typePalette = typeof typeObj["palette"] === "string" ? typeObj["palette"] : undefined;
-        if (typeShiki || typePalette) {
+        if (typeShiki || typeMermaid || typePalette) {
           parsedTypes[typeName] = {
             ...(typePalette ? { palette: typePalette } : {}),
-            ...(typeShiki ? { code: { Shiki: typeShiki } } : {}),
+            ...((typeShiki || typeMermaid)
+              ? {
+                  code: {
+                    ...(typeShiki ? { Shiki: typeShiki } : {}),
+                    ...(typeMermaid ? { mermaid: typeMermaid } : {}),
+                  },
+                }
+              : {}),
           };
         }
       }

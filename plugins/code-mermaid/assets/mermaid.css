@@ -1,0 +1,66 @@
+.mdsone-mermaid {
+  margin: 0 0 26px;
+  border: 1px solid var(--table-border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  padding: 40px 12px 12px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.mdsone-mermaid__controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.mdsone-mermaid__zoom-btn {
+  border: 1px solid var(--table-border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  width: 26px;
+  height: 24px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mdsone-mermaid__zoom-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.mdsone-mermaid__svg {
+  min-width: max-content;
+}
+
+.mdsone-mermaid__svg svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mdsone-mermaid svg foreignObject {
+  overflow: visible;
+}
+
+/* Prevent host markdown typography rules from breaking Mermaid labels. */
+.mdsone-mermaid svg foreignObject p,
+.mdsone-mermaid svg foreignObject div,
+.mdsone-mermaid svg foreignObject span {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: 1.2 !important;
+  text-indent: 0 !important;
+  letter-spacing: normal !important;
+}
