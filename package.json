@@ -1,6 +1,6 @@
 {
   "name": "mdsone",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "mdsone — Converts Markdown to self-contained HTML.",
   "type": "module",
   "bin": {
