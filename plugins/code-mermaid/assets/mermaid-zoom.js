@@ -4,7 +4,6 @@
   var MIN_SCALE = 0.6;
   var MAX_SCALE = Number.POSITIVE_INFINITY;
   var STEP = 0.2;
-  var PAN_STEP = 120;
   var SCALE_EPSILON = 0.001;
   var ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   var boundFigures = new Set();
@@ -414,27 +413,13 @@
     }, { passive: false });
   }
 
-  function moveFigure(figure, direction) {
+  function resetFigureView(figure) {
     if (!(figure instanceof HTMLElement)) return;
-    var current = readPan(figure);
-    if (direction === "home") {
-      var svg = figure.querySelector(".mdsone-mermaid__svg > svg");
-      if (svg instanceof SVGElement) {
-        writeScale(figure, svg, 1);
-      }
-      writePan(figure, { x: 0, y: 0 });
-      return;
+    var svg = figure.querySelector(".mdsone-mermaid__svg > svg");
+    if (svg instanceof SVGElement) {
+      writeScale(figure, svg, 1);
     }
-
-    var x = current.x;
-    var y = current.y;
-    if (direction === "up") y += PAN_STEP;
-    else if (direction === "down") y -= PAN_STEP;
-    else if (direction === "left") x += PAN_STEP;
-    else if (direction === "right") x -= PAN_STEP;
-    else return;
-
-    writePan(figure, { x: x, y: y });
+    writePan(figure, { x: 0, y: 0 });
   }
 
   function bindFigure(figure) {
@@ -555,12 +540,11 @@
       return;
     }
 
-    var panButton = target.closest(".mdsone-mermaid__pan-btn");
-    if (!panButton) return;
-    var figureForPan = panButton.closest(".mdsone-mermaid");
-    if (!(figureForPan instanceof HTMLElement)) return;
-    var direction = String(panButton.getAttribute("data-pan") || "").toLowerCase();
-    moveFigure(figureForPan, direction);
+    var resetButton = target.closest(".mdsone-mermaid__reset-btn");
+    if (!resetButton) return;
+    var figureForReset = resetButton.closest(".mdsone-mermaid");
+    if (!(figureForReset instanceof HTMLElement)) return;
+    resetFigureView(figureForReset);
   });
 
   bindAll(document);

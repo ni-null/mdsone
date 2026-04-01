@@ -33,6 +33,15 @@
   }
 
   function applyFigureTheme(figure, theme) {
+    var styleMode = String(figure && figure.getAttribute ? (figure.getAttribute("data-mermaid-style-mode") || "") : "").toLowerCase();
+    if (
+      figure
+      && figure.getAttribute
+      && (styleMode === "locked" || figure.getAttribute("data-mermaid-theme-lock") === "1")
+    ) {
+      return;
+    }
+
     const styleNode = figure.querySelector("svg style[data-mermaid-theme-style='1']");
     const lightNode = figure.querySelector("script.mdsone-mermaid-style-light");
     const darkNode = figure.querySelector("script.mdsone-mermaid-style-dark");

@@ -762,7 +762,8 @@ body {
   padding-left: 0;
 }
 
-.tab-content p {
+.tab-content > p,
+.tab-content > :not(.mdsone-mermaid) p {
   color: var(--text-secondary);
   margin-bottom: 20px;
   font-size: var(--fs-body);

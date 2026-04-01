@@ -31,8 +31,8 @@
 
 .mdsone-mermaid__control-panel {
   display: grid;
-  grid-template-columns: repeat(3, 26px);
-  grid-template-rows: repeat(3, 26px);
+  grid-template-columns: repeat(2, 26px);
+  grid-template-rows: repeat(2, 26px);
   gap: 3px;
   pointer-events: auto;
 }
@@ -59,12 +59,6 @@
   box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 12%, transparent);
   padding: 0;
   line-height: 1;
-}
-
-.mdsone-mermaid__panel-gap {
-  width: 26px;
-  height: 26px;
-  display: block;
 }
 
 .mdsone-mermaid__btn:hover {
@@ -103,12 +97,7 @@
   color: var(--cb-copy-hover-color, var(--text-primary));
 }
 
-.mdsone-mermaid__pan-btn {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.mdsone-mermaid__pan-btn--home svg {
+.mdsone-mermaid__reset-btn svg {
   width: 13px;
   height: 13px;
 }
@@ -121,7 +110,7 @@
   max-width: 100%;
   min-width: 0;
   min-height: 120px;
-  padding-right: 88px;
+  padding-right: 62px;
   padding-top: 30px;
   cursor: grab;
   user-select: none;
@@ -161,19 +150,24 @@
 
 .mdsone-mermaid svg foreignObject {
   overflow: visible;
+  color: currentColor !important;
 }
 
 /* Prevent host markdown typography rules from breaking Mermaid labels. */
-.mdsone-mermaid svg foreignObject p,
-.mdsone-mermaid svg foreignObject div,
-.mdsone-mermaid svg foreignObject span {
+.mdsone-mermaid svg foreignObject,
+.mdsone-mermaid svg foreignObject * {
+  box-sizing: border-box !important;
   margin: 0 !important;
   padding: 0 !important;
   font-size: inherit !important;
   font-family: inherit !important;
   font-weight: inherit !important;
-  color: inherit !important;
-  line-height: 1.2 !important;
+  font-style: inherit !important;
+  line-height: inherit !important;
+  background: transparent !important;
+  border: 0 !important;
+  text-decoration: inherit !important;
+  text-transform: none !important;
   text-indent: 0 !important;
   letter-spacing: normal !important;
 }

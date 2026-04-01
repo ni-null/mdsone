@@ -97,10 +97,6 @@ function fail(message: string, details?: string[]): never {
   throw new CliError(message, { details });
 }
 
-function progressStart(logger: CliPipelineLogger, message: string): void {
-  logger.progressStart?.(message);
-}
-
 function progressUpdate(logger: CliPipelineLogger, message: string): void {
   logger.progressUpdate?.(message);
 }

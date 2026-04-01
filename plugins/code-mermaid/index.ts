@@ -51,12 +51,6 @@ const renderCache = new Map<string, Promise<string | null>>();
 let warnedMmdcMissing = false;
 let mermaidDetectedForPendingAssets = false;
 
-function asObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
 function readCodeMermaidPluginConfig(config: Config): CodeMermaidPluginConfig {
   const raw = config.plugins?.config?.["code-mermaid"];
   return (raw && typeof raw === "object" ? raw : {}) as CodeMermaidPluginConfig;
@@ -111,6 +105,23 @@ function hasThemeInitOverride(source: string): boolean {
   return /%%\{\s*init\s*:[\s\S]*?\b(?:theme|themeVariables)\b[\s\S]*?\}%%/i.test(source);
 }
 
+function hasCustomColorStyleOverride(source: string): boolean {
+  if (!source) return false;
+  const text = String(source);
+
+  // Mermaid init config with explicit theme styling should be treated as user-locked style.
+  if (/%%\{\s*init\s*:[\s\S]*?\b(?:theme|themeVariables|themeCSS)\b[\s\S]*?\}%%/i.test(text)) {
+    return true;
+  }
+
+  // Flowchart/classDiagram directives that commonly carry explicit colors.
+  if (/(?:^|\n)\s*(?:classDef|style|linkStyle)\b[\s\S]*?(?:fill|stroke|color|background|#|rgb\(|hsl\(|var\()/i.test(text)) {
+    return true;
+  }
+
+  return false;
+}
+
 function hasMermaidFence(markdownText: string): boolean {
   return /(?:^|\n)[ \t]*(?:```|~~~)[ \t]*mermaid(?:[ \t].*)?(?:\n|$)/i.test(markdownText);
 }
@@ -156,6 +167,35 @@ function injectSvgStyle(svgWithoutStyle: string, styleText: string): string {
     /^<svg\b([^>]*)>/i,
     `<svg$1><style data-mermaid-theme-style="1">${styleText}</style>`,
   );
+}
+
+function extractSvgId(svgWithoutStyle: string): string {
+  const match = svgWithoutStyle.match(/^<svg\b[^>]*\bid="([^"]+)"/i);
+  return String(match?.[1] ?? "").trim();
+}
+
+function extractRootFillColor(styleText: string, svgId: string): string {
+  if (!styleText || !svgId) return "";
+  const rootRuleMatch = styleText.match(new RegExp(`#${escapeRegExp(svgId)}\\s*\\{([^}]*)\\}`, "i"));
+  const declarations = String(rootRuleMatch?.[1] ?? "");
+  const fillMatch = declarations.match(/\bfill\s*:\s*([^;]+)\s*;?/i);
+  return String(fillMatch?.[1] ?? "").trim();
+}
+
+function injectForeignObjectColorIsolation(styleText: string, svgWithoutStyle: string): string {
+  const css = String(styleText ?? "");
+  if (!css) return css;
+  const svgId = extractSvgId(svgWithoutStyle);
+  if (!svgId) return css;
+
+  const marker = "/*mdsone-foreignobject-color-isolation*/";
+  if (css.includes(marker)) return css;
+
+  // Keep foreignObject text inheriting Mermaid's own themed text color, not host markdown p styles.
+  const rootFillColor = extractRootFillColor(css, svgId);
+  const rootColorRule = rootFillColor ? `#${svgId}{color:${rootFillColor};}` : "";
+  const isolationRule = `${marker}${rootColorRule}#${svgId} foreignObject,#${svgId} foreignObject p,#${svgId} foreignObject span,#${svgId} foreignObject div{color:inherit;}`;
+  return `${css}\n${isolationRule}`;
 }
 
 function escapeRegExp(value: string): string {
@@ -397,9 +437,16 @@ async function renderMermaidSvgWithFallback(
   return null;
 }
 
-function buildMermaidFigure(svg: string, lightStyleB64: string, darkStyleB64: string, sourceBase64: string): string {
+function buildMermaidFigure(
+  svg: string,
+  lightStyleB64: string,
+  darkStyleB64: string,
+  sourceBase64: string,
+  themeLocked: boolean,
+): string {
+  const styleMode = themeLocked ? "locked" : "auto";
   return [
-    `<figure class="mdsone-mermaid" data-mermaid-rendered="1" data-mermaid-themed="1" data-mermaid-source-b64="${sourceBase64}">`,
+    `<figure class="mdsone-mermaid" data-mermaid-rendered="1" data-mermaid-themed="1" data-mermaid-style-mode="${styleMode}" data-mermaid-source-b64="${sourceBase64}">`,
     `  <script type="text/plain" class="mdsone-mermaid-style-light">${lightStyleB64}</script>`,
     `  <script type="text/plain" class="mdsone-mermaid-style-dark">${darkStyleB64}</script>`,
     buildMermaidControlsHtml(),
@@ -447,6 +494,7 @@ export const codeMermaidPlugin: Plugin = {
       const sourceRaw = code.length > 0 ? code.text() : pre.text();
       const source = normalizeMermaidSource(sourceRaw || "");
       if (!source) continue;
+      const themeLocked = hasCustomColorStyleOverride(source);
 
       const [lightSvgRaw, darkSvgRaw] = await Promise.all([
         renderMermaidSvgWithFallback(
@@ -478,8 +526,10 @@ export const codeMermaidPlugin: Plugin = {
       const darkParts = splitSvgStyle(scopedDark);
       if (!lightParts || !darkParts) continue;
 
-      const lightStyle = decodeBasicHtmlEntities(lightParts.styleText || darkParts.styleText);
-      const darkStyle = decodeBasicHtmlEntities(darkParts.styleText || lightParts.styleText);
+      const lightStyleRaw = decodeBasicHtmlEntities(lightParts.styleText || darkParts.styleText);
+      const darkStyleRaw = decodeBasicHtmlEntities(darkParts.styleText || lightParts.styleText);
+      const lightStyle = injectForeignObjectColorIsolation(lightStyleRaw, lightParts.svgWithoutStyle);
+      const darkStyle = injectForeignObjectColorIsolation(darkStyleRaw, darkParts.svgWithoutStyle);
       if (
         lightStyle
         && darkStyle
@@ -495,7 +545,7 @@ export const codeMermaidPlugin: Plugin = {
       const lightStyleB64 = encodeBase64(lightStyle);
       const darkStyleB64 = encodeBase64(darkStyle);
       const sourceBase64 = encodeBase64(source);
-      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyleB64, darkStyleB64, sourceBase64));
+      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyleB64, darkStyleB64, sourceBase64, themeLocked));
     }
   },
 

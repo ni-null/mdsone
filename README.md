@@ -167,14 +167,7 @@ MCP:
 
 ```
 
-## Markdown Sharing / Build Solutions Comparison
-
-| Type                   | Usage                      | Example Tools         | Setup Required     | Sharing Ease | Consistency | Offline Support | Mermaid / Math Support | Best For                        |
-| ---------------------- | -------------------------- | --------------------- | ------------------ | ------------ | ----------- | --------------- | ---------------------- | ------------------------------- |
-| Platform Hosting       | Upload / cloud editing     | GitHub, HackMD        | Platform-dependent | ⭐⭐⭐⭐     | ⭐⭐⭐      | ❌              | ⭐⭐⭐ (varies)        | Collaboration, README           |
-| Local Tools            | Editor / CLI preview       | VS Code + plugins     | Required           | ⭐⭐         | ⭐⭐⭐⭐    | ⭐⭐⭐          | ⭐⭐⭐⭐               | Internal use                    |
-| Static Site Generators | Build a documentation site | VitePress, Docusaurus | Node.js + build    | ⭐⭐⭐       | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐        | ⭐⭐⭐⭐⭐             | Docs websites                   |
-| mdsone                 | Export to single `.html` | mdsone CLI            | ✅                 | ⭐⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐      | ⭐⭐⭐⭐⭐             | Sharing, delivery, offline docs |
+ 
 
 ## Acknowledgements
 
