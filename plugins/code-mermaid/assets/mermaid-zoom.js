@@ -130,14 +130,8 @@
     if (figure.dataset.mermaidViewportLocked === "1") return;
 
     var width = viewport.clientWidth;
-    var svgRect = svg.getBoundingClientRect();
-    var height = svgRect.height;
-
     if (Number.isFinite(width) && width > 0) {
       viewport.style.width = Math.ceil(width) + "px";
-    }
-    if (Number.isFinite(height) && height > 0) {
-      viewport.style.height = Math.ceil(height) + "px";
     }
 
     figure.dataset.mermaidViewportLocked = "1";
@@ -200,6 +194,36 @@
     lockViewportSize(figure, viewport, svg);
   }
 
+  function snapshotInlineViewState(figure) {
+    if (!(figure instanceof HTMLElement)) return;
+    var pan = readPan(figure);
+    figure.setAttribute("data-mermaid-inline-scale", String(readScale(figure)));
+    figure.setAttribute("data-mermaid-inline-pan-x", String(pan.x));
+    figure.setAttribute("data-mermaid-inline-pan-y", String(pan.y));
+    figure.dataset.mermaidInlineSnapshot = "1";
+  }
+
+  function restoreInlineViewState(figure) {
+    if (!(figure instanceof HTMLElement)) return;
+    if (figure.dataset.mermaidInlineSnapshot !== "1") return;
+    var svg = figure.querySelector(".mdsone-mermaid__svg > svg");
+    if (!(svg instanceof SVGElement)) return;
+
+    var scale = Number(figure.getAttribute("data-mermaid-inline-scale"));
+    var panX = Number(figure.getAttribute("data-mermaid-inline-pan-x"));
+    var panY = Number(figure.getAttribute("data-mermaid-inline-pan-y"));
+    writeScale(figure, svg, Number.isFinite(scale) ? scale : 1);
+    writePan(figure, {
+      x: Number.isFinite(panX) ? panX : 0,
+      y: Number.isFinite(panY) ? panY : 0,
+    });
+
+    figure.removeAttribute("data-mermaid-inline-scale");
+    figure.removeAttribute("data-mermaid-inline-pan-x");
+    figure.removeAttribute("data-mermaid-inline-pan-y");
+    delete figure.dataset.mermaidInlineSnapshot;
+  }
+
   function bindFullscreenState(figure) {
     if (!(figure instanceof HTMLElement)) return;
     if (figure.dataset.mermaidFullscreenBound === "1") return;
@@ -208,6 +232,7 @@
     function syncState() {
       updateFullscreenButtonState(figure);
       if (isFigureFullscreen(figure)) {
+        snapshotInlineViewState(figure);
         var viewport = getViewport(figure);
         if (viewport instanceof HTMLElement) {
           viewport.style.width = "";
@@ -215,6 +240,7 @@
           figure.dataset.mermaidViewportLocked = "0";
         }
       } else {
+        restoreInlineViewState(figure);
         relockViewportSize(figure);
       }
     }

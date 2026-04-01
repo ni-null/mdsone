@@ -1,13 +1,25 @@
 ;(function () {
-  function decodeStyleText(raw) {
-    if (!raw || raw.indexOf("&") === -1) return raw || "";
-    return raw
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&#39;/g, "'")
-      .replace(/&apos;/g, "'")
-      .replace(/&amp;/g, "&");
+  function decodeBase64Utf8(base64) {
+    var b64 = String(base64 || "").trim();
+    if (!b64) return "";
+    try {
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      if (typeof TextDecoder !== "undefined") {
+        return new TextDecoder("utf-8").decode(bytes);
+      }
+
+      var escaped = "";
+      for (var j = 0; j < bytes.length; j += 1) {
+        escaped += "%" + bytes[j].toString(16).padStart(2, "0");
+      }
+      return decodeURIComponent(escaped);
+    } catch (_e) {
+      return "";
+    }
   }
 
   function detectThemeFromNode(node) {
@@ -41,8 +53,8 @@
     const darkNode = figure.querySelector("script.mdsone-mermaid-style-dark");
     if (!styleNode || !lightNode || !darkNode) return;
 
-    const lightStyle = decodeStyleText(lightNode.textContent || "");
-    const darkStyle = decodeStyleText(darkNode.textContent || "");
+    const lightStyle = decodeBase64Utf8(lightNode.textContent || "");
+    const darkStyle = decodeBase64Utf8(darkNode.textContent || "");
     const nextStyle = theme === "dark" ? (darkStyle || lightStyle) : (lightStyle || darkStyle);
     if (!nextStyle || styleNode.textContent === nextStyle) return;
     styleNode.textContent = nextStyle;

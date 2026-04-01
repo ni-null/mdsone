@@ -397,11 +397,11 @@ async function renderMermaidSvgWithFallback(
   return null;
 }
 
-function buildMermaidFigure(svg: string, lightStyle: string, darkStyle: string, sourceBase64: string): string {
+function buildMermaidFigure(svg: string, lightStyleB64: string, darkStyleB64: string, sourceBase64: string): string {
   return [
     `<figure class="mdsone-mermaid" data-mermaid-rendered="1" data-mermaid-themed="1" data-mermaid-source-b64="${sourceBase64}">`,
-    `  <script type="text/plain" class="mdsone-mermaid-style-light">${lightStyle}</script>`,
-    `  <script type="text/plain" class="mdsone-mermaid-style-dark">${darkStyle}</script>`,
+    `  <script type="text/plain" class="mdsone-mermaid-style-light">${lightStyleB64}</script>`,
+    `  <script type="text/plain" class="mdsone-mermaid-style-dark">${darkStyleB64}</script>`,
     buildMermaidControlsHtml(),
     '  <div class="mdsone-mermaid__viewport">',
     `    <div class="mdsone-mermaid__svg">${svg}</div>`,
@@ -492,8 +492,10 @@ export const codeMermaidPlugin: Plugin = {
         );
       }
       const mergedSvg = injectSvgStyle(lightParts.svgWithoutStyle, lightStyle);
+      const lightStyleB64 = encodeBase64(lightStyle);
+      const darkStyleB64 = encodeBase64(darkStyle);
       const sourceBase64 = encodeBase64(source);
-      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyle, darkStyle, sourceBase64));
+      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyleB64, darkStyleB64, sourceBase64));
     }
   },
 
