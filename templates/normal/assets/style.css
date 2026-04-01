@@ -21,6 +21,9 @@
   --scrollbar-track: color-mix(in srgb, var(--bg-deep) 84%, var(--bg-surface) 16%);
   --scrollbar-thumb: color-mix(in srgb, var(--accent-primary, #6f86b8) 24%, transparent);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--accent-primary, #6f86b8) 36%, transparent);
+  --content-scrollbar-track: color-mix(in srgb, var(--bg-deep) 68%, var(--bg-surface) 32%);
+  --content-scrollbar-thumb: color-mix(in srgb, var(--accent-primary, #6f86b8) 40%, transparent);
+  --content-scrollbar-thumb-hover: color-mix(in srgb, var(--accent-primary, #6f86b8) 56%, transparent);
   /* cb-dot colors are universal (macOS traffic lights) */
   --cb-dot-red:    #d98b84;
   --cb-dot-yellow: #d8bb73;
@@ -635,20 +638,55 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   min-width: 0;
+  max-height: calc(100vh - (var(--frame-pad) * 2));
   border-radius: 18px;
 }
 
 .content-area {
   flex: 1;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: var(--content-scrollbar-thumb) var(--content-scrollbar-track);
   padding: clamp(24px, 4vh, 40px) clamp(18px, 4.8vw, 56px);
   background: color-mix(in srgb, var(--bg-void) 92%, transparent);
   border: 0;
   border-radius: 18px;
   box-shadow: none;
   font-size: calc(16px * var(--font-scale));
+}
+
+.content-area::-webkit-scrollbar {
+  width: 11px;
+}
+
+.content-area::-webkit-scrollbar-track {
+  background: var(--content-scrollbar-track);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    var(--content-scrollbar-thumb),
+    color-mix(in srgb, var(--content-scrollbar-thumb) 82%, transparent)
+  );
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.content-area::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--content-scrollbar-thumb-hover),
+    color-mix(in srgb, var(--content-scrollbar-thumb-hover) 84%, transparent)
+  );
 }
 
 /* -- SIDEBAR CONTROLS (theme + language) -- */
@@ -1404,10 +1442,16 @@ body {
   }
   .content-area {
     padding: 20px;
+    overflow: visible;
+    scrollbar-width: auto;
     border-radius: 0;
     border-inline: 0;
     border-bottom: 0;
     box-shadow: none;
+  }
+  .main-content {
+    overflow: visible;
+    max-height: none;
   }
 
   .table-scroll-wrapper > table {

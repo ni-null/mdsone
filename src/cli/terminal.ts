@@ -5,6 +5,7 @@
 
 export type TtyLikeStream = {
   isTTY?: boolean;
+  hasColors?: () => boolean;
 };
 
 export function isTty(stream: TtyLikeStream | null | undefined): boolean {
@@ -26,11 +27,18 @@ export function isColorOutputEnabled(options?: {
   stderr?: TtyLikeStream;
 }): boolean {
   const env = options?.env ?? process.env;
+  if (env["FORCE_COLOR"] === "0") return false;
+  if (env["FORCE_COLOR"] && env["FORCE_COLOR"] !== "0") return true;
   if (env["NO_COLOR"] !== undefined) return false;
-  return isInteractiveTerminal(options);
+  if (!isInteractiveTerminal(options)) return false;
+
+  const stdout = options?.stdout ?? process.stdout;
+  if (typeof stdout.hasColors === "function") {
+    return stdout.hasColors();
+  }
+  return true;
 }
 
 export function canRewriteLine(stream: TtyLikeStream = process.stderr): boolean {
   return isTty(stream);
 }
-

@@ -502,6 +502,9 @@ export const codeMermaidPlugin: Plugin = {
   getAssets(): PluginAssets {
     if (!mermaidDetectedForPendingAssets) return {};
     mermaidDetectedForPendingAssets = false;
-    return { cssFiles: ["mermaid.css"], jsFiles: ["mermaid-theme-switch.js", "mermaid-zoom.js"] };
+    return {
+      cssFiles: ["mermaid.css"],
+      jsFiles: ["mermaid-runtime-utils.js", "mermaid-theme-switch.js", "mermaid-zoom.js"],
+    };
   },
 };

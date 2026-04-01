@@ -3,13 +3,14 @@
 ## Syntax
 
 ```bash
-mdsone <inputs...> [options]
+mdsone [options] [inputs...]
 ```
 
-## Core Options
+## Options
 
 | Option | Description | Example |
 |---|---|---|
+| `-v, --version` | Show CLI version | `--version` |
 | `<inputs...>` | Input markdown source: single file, multiple files, or one folder | `README.md`, `a.md b.md`, `./docs` |
 | `-m, --merge` | Merge all input docs into one HTML | `-m` |
 | `-o, --output <PATH>` | Output path. In merge mode: file path. In batch mode: file path (single file input) or directory (multi/folder input) | `-o dist/index.html` |
@@ -17,11 +18,18 @@ mdsone <inputs...> [options]
 | `-t, --template <NAME|PATH[@VARIANT]>` | Template name/path with optional variant | `-t normal@warm-cream` |
 | `--title <TEXT>` | Site title shown in output HTML | `--title "My Docs"` |
 | `-i, --i18n-mode [CODE]` | Enable i18n mode. Optional default locale with `--i18n-mode=CODE` | `-i=zh-TW` |
+| `--template-dev` | Start template development server (source checkout only) | `--template-dev` |
+| `-c, --config <PATH>` | Specify `config.toml` path | `-c ./config.toml` |
+| `-h, --help` | Show help message | `--help` |
+
+## Markdown Options
+
+| Option | Description | Example |
+|---|---|---|
 | `--md-linkify [on|off]` | Markdown-it `linkify`; bare flag means `on` | `--md-linkify`, `--md-linkify=off` |
 | `--md-typographer [on|off]` | Markdown-it `typographer`; bare flag means `on` | `--md-typographer=off` |
 | `--md-breaks [on|off]` | Markdown-it `breaks`; bare flag means `on` | `--md-breaks` |
 | `--md-xhtml-out [on|off]` | Markdown-it `xhtmlOut`; bare flag means `on` | `--md-xhtml-out=off` |
-| `-c, --config <PATH>` | Specify `config.toml` path | `-c ./config.toml` |
 
 ## Plugin Options
 
@@ -32,9 +40,16 @@ mdsone <inputs...> [options]
 | `--img-compress <1-100>` | Image compression quality (requires `sharp`) | `--img-compress 80` |
 | `--katex [mode]` | KaTeX mode: auto/`woff2` by default, `full` for all fonts, `off` to disable | `--katex`, `--katex=full`, `--katex=off` |
 | `--code-highlight <off>` | Disable syntax highlighting | `--code-highlight=off` |
+| `--code-mermaid <off>` | Disable Mermaid diagram rendering | `--code-mermaid=off` |
 | `--code-copy <off|line|cmd>` | Code copy button mode | `--code-copy=cmd` |
 | `--code-line-number [off]` | Enable line numbers (`=off` to disable) | `--code-line-number` |
 | `--minify [off]` | Minify final output HTML (`off` to disable) | `--minify` |
+
+## MCP
+
+| Command | Description |
+|---|---|
+| `mdsone mcp` | Run MCP mode (`mdsone mcp --help` for subcommands) |
 
 KaTeX default behavior:
 
@@ -91,6 +106,7 @@ i18n mode requires a single folder input with `[locale]` subfolders and uses mer
 | Image width | `--img-max-width` | `IMG_MAX_WIDTH` | `[plugins.image] max_width` |
 | Image compression | `--img-compress` | `IMG_COMPRESS` | `[plugins.image] compress` |
 | Highlight | `--code-highlight=off` | `CODE_HIGHLIGHT` | `[plugins."code-highlight"] enable` |
+| Mermaid | `--code-mermaid=off` | `CODE_MERMAID` | `[plugins."code-mermaid"] enable` |
 | Code copy | `--code-copy=...` | `CODE_COPY` | `[plugins."code-copy"] mode` |
 | Line numbers | `--code-line-number` | `CODE_LINE_NUMBER` | `[plugins."code-line-number"] enable` |
 | Minify | `--minify` | - | `[plugins.minify] enable` |
@@ -107,4 +123,3 @@ npx mdsone ./docs --i18n-mode=zh-TW -o dist/index.html
 # Disable highlight and copy buttons
 npx mdsone ./docs -m --code-highlight=off --code-copy=off
 ```
-

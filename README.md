@@ -125,31 +125,31 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-
 ## CLI Parameters
 
 ```bash
+Usage: mdsone [options] [inputs...]
+
 Arguments:
   inputs                                Input: single file, multiple files, or single folder path
 
 Options:
   -v, --version                         Display version
-  --template-dev                        Start template development server (source checkout only)
   -m, --merge                           Merge all inputs into a single HTML output
   -o, --output <PATH>                   Output HTML file path
   -f, --force                           Overwrite existing output file
   -t, --template <NAME|PATH[@VARIANT]>  Template name/path with optional variant (e.g. normal@warm-cream)
   --title <TEXT>                        Documentation site title (default: Documentation)
-  -i, --i18n-mode [CODE]                Enable multi-language mode; optional CODE via --i18n-mode=CODE (e.g.
-                                        --i18n-mode=zh-TW)
-  --md-linkify <on|off>                 Markdown-it linkify (use --md-linkify as shorthand for --md-linkify=on)
-  --md-typographer <on|off>             Markdown-it typographer (use --md-typographer as shorthand for
-                                        --md-typographer=on)
-  --md-breaks <on|off>                  Markdown-it breaks (use --md-breaks as shorthand for --md-breaks=on)
-  --md-xhtml-out <on|off>               Markdown-it xhtmlOut (use --md-xhtml-out as shorthand for
-                                        --md-xhtml-out=on)
+  -i, --i18n-mode [CODE]                Enable multi-language mode; optional CODE via --i18n-mode=CODE (e.g. --i18n-mode=zh-TW, -i=zh-TW)
+  --template-dev                        Start template development server (source checkout only)
   -c, --config <PATH>                   Specify config.toml path
   -h, --help                            display help for command
+
+Markdown:
+  --md-linkify <on|off>                 Markdown-it linkify (use --md-linkify as shorthand for --md-linkify=on)
+  --md-typographer <on|off>             Markdown-it typographer (use --md-typographer as shorthand for --md-typographer=on)
+  --md-breaks <on|off>                  Markdown-it breaks (use --md-breaks as shorthand for --md-breaks=on)
+  --md-xhtml-out <on|off>               Markdown-it xhtmlOut (use --md-xhtml-out as shorthand for --md-xhtml-out=on)
 
 Plugins:
   --img-embed <off|base64>              Image embedding mode (use --img-embed=base64|off)
@@ -157,11 +157,24 @@ Plugins:
   --img-compress <1-100>                Image compression quality 1-100 (requires 'sharp' package)
   --katex [mode]                        KaTeX mode (auto default; use --katex=off to disable, --katex=full for full fonts)
   --code-highlight <off>                Disable syntax highlighting (use --code-highlight=off)
+  --code-mermaid <off>                  Disable Mermaid diagram rendering (use --code-mermaid=off)
   --code-copy <off|line|cmd>            Copy button mode (use --code-copy=off|line|cmd)
   --code-line-number [off]              Show line numbers in code blocks (use --code-line-number or --code-line-number=off)
   --minify [off]                        Minify output HTML (default: off; use --minify or --minify=off)
 
+MCP:
+  mcp                                   Run MCP mode (use `mdsone mcp --help` for subcommands)
+
 ```
+
+## Markdown Sharing / Build Solutions Comparison
+
+| Type                   | Usage                      | Example Tools         | Setup Required     | Sharing Ease | Consistency | Offline Support | Mermaid / Math Support | Best For                        |
+| ---------------------- | -------------------------- | --------------------- | ------------------ | ------------ | ----------- | --------------- | ---------------------- | ------------------------------- |
+| Platform Hosting       | Upload / cloud editing     | GitHub, HackMD        | Platform-dependent | ⭐⭐⭐⭐     | ⭐⭐⭐      | ❌              | ⭐⭐⭐ (varies)        | Collaboration, README           |
+| Local Tools            | Editor / CLI preview       | VS Code + plugins     | Required           | ⭐⭐         | ⭐⭐⭐⭐    | ⭐⭐⭐          | ⭐⭐⭐⭐               | Internal use                    |
+| Static Site Generators | Build a documentation site | VitePress, Docusaurus | Node.js + build    | ⭐⭐⭐       | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐        | ⭐⭐⭐⭐⭐             | Docs websites                   |
+| mdsone                 | Export to single `.html` | mdsone CLI            | ✅                 | ⭐⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐      | ⭐⭐⭐⭐⭐             | Sharing, delivery, offline docs |
 
 ## Acknowledgements
 

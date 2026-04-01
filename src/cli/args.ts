@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Command, type Help, type Option } from "commander";
 import type { CliArgs, Config, CliProgram } from "../core/types.js";
 import { applyPluginCliToConfig, registerPluginCliOptions } from "../plugins/option-specs.js";
+import { isColorOutputEnabled } from "./terminal.js";
 
 function readPkgVersion(): string {
   try {
@@ -31,6 +32,33 @@ function readPkgVersion(): string {
 
 const VERSION = readPkgVersion();
 const ON_OFF_PATTERN = /^(on|off)$/i;
+const ANSI_RESET = "\x1b[0m";
+const ANSI_DIM = "\x1b[90m";
+const ANSI_FLAG = "\x1b[36m";
+const ANSI_PLACEHOLDER = "\x1b[32m";
+const ANSI_INLINE_CODE = "\x1b[33m";
+const ANSI_SECTION = "\x1b[1;37m";
+
+function paint(text: string, ansi: string): string {
+  return `${ansi}${text}${ANSI_RESET}`;
+}
+
+function colorizeHelpOutput(text: string): string {
+  let colored = text;
+  colored = colored.replace(/`[^`\n]+`/g, (token) => paint(token, ANSI_INLINE_CODE));
+  colored = colored.replace(/<[^>\n]+>|\[[^\]\n]+\]/g, (token) => paint(token, ANSI_PLACEHOLDER));
+  colored = colored.replace(/(^|[ ,(])(--[a-z0-9][a-z0-9-]*|-{1}[A-Za-z0-9])(?=[ =,)\]]|$)/gi, (_m, p1: string, p2: string) => {
+    return `${p1}${paint(p2, ANSI_FLAG)}`;
+  });
+  colored = colored.replace(/([ ,])(\|)([ ,])/g, (_m, p1: string, p2: string, p3: string) => `${p1}${paint(p2, ANSI_DIM)}${p3}`);
+  colored = colored
+    .split("\n")
+    .map((line) => (/^(Usage|Arguments|Options|Markdown|MCP|Plugins):/.test(line)
+      ? paint(line, ANSI_SECTION)
+      : line))
+    .join("\n");
+  return colored;
+}
 
 function findInvalidSpaceArg(
   args: string[],
@@ -97,12 +125,21 @@ function formatGroupedHelp(
   const visibleOptions = helper.visibleOptions(cmd);
   const pluginOptions = visibleOptions.filter((option) => pluginFlags.has(option.flags));
   const coreOptions = visibleOptions.filter((option) => !pluginFlags.has(option.flags));
+  const markdownOptions = coreOptions.filter((option) => String(option.long || "").startsWith("--md-"));
+  const generalCoreOptions = coreOptions.filter((option) => !String(option.long || "").startsWith("--md-"));
 
-  const coreOptionList = coreOptions.map((option) => {
+  const coreOptionList = generalCoreOptions.map((option) => {
     return formatItem(helper.optionTerm(option), helper.optionDescription(option));
   });
   if (coreOptionList.length > 0) {
     output = output.concat(["Options:", formatList(coreOptionList), ""]);
+  }
+
+  const markdownOptionList = markdownOptions.map((option) => {
+    return formatItem(helper.optionTerm(option), helper.optionDescription(option));
+  });
+  if (markdownOptionList.length > 0) {
+    output = output.concat(["Markdown:", formatList(markdownOptionList), ""]);
   }
 
   const pluginOptionList = pluginOptions.map((option) => {
@@ -112,7 +149,13 @@ function formatGroupedHelp(
     output = output.concat(["Plugins:", formatList(pluginOptionList), ""]);
   }
 
-  return output.join("\n");
+  const mcpCommands = [
+    formatItem("mcp", "Run MCP mode (use `mdsone mcp --help` for subcommands)"),
+  ];
+  output = output.concat(["MCP:", formatList(mcpCommands), ""]);
+
+  const rendered = output.join("\n");
+  return isColorOutputEnabled() ? colorizeHelpOutput(rendered) : rendered;
 }
 
 /**
@@ -123,10 +166,8 @@ export function parseArgs(argv?: string[]): CliArgs {
 
   program
     .name("mdsone")
-    .description("mdsone — Convert Markdown to self-contained HTML (MCP: use `mdsone mcp`)")
     .version(VERSION, "-v, --version", "Display version")
     .argument("[inputs...]", "Input: single file, multiple files, or single folder path")
-    .option("--template-dev", "Start template development server (source checkout only)")
     // Output
     .option("-m, --merge", "Merge all inputs into a single HTML output")
     .option("-o, --output <PATH>", "Output HTML file path")
@@ -158,6 +199,7 @@ export function parseArgs(argv?: string[]): CliArgs {
       (value: string) => parseOnOffMode(value, "md-xhtml-out"),
     )
     // Config
+    .option("--template-dev", "Start template development server (source checkout only)")
     .option("-c, --config <PATH>", "Specify config.toml path")
     .allowUnknownOption(false);
 

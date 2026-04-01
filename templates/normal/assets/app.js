@@ -96,12 +96,25 @@ async function renderApp(data) {
           }
         }
 
+        function scrollContentToTop() {
+          if (!contentArea) return
+          contentArea.scrollTo({ top: 0, behavior: "auto" })
+        }
+
+        function scrollContentToTarget(target, behavior = "smooth") {
+          if (!contentArea || !target) return
+          const contentRect = contentArea.getBoundingClientRect()
+          const targetRect = target.getBoundingClientRect()
+          const top = (targetRect.top - contentRect.top) + contentArea.scrollTop - 24
+          contentArea.scrollTo({ top: Math.max(0, top), behavior })
+        }
+
         function setActiveDoc(tab) {
           const buttons = tabList.querySelectorAll(".tab-button")
           const contents = contentArea.querySelectorAll(".tab-content")
           buttons.forEach((b) => b.classList.toggle("active", b.getAttribute("data-tab") === tab))
           contents.forEach((c) => c.classList.toggle("active", c.getAttribute("data-tab") === tab))
-          window.scrollTo({ top: 0, behavior: "auto" })
+          scrollContentToTop()
           switchTOC(tab)
         }
 
@@ -134,8 +147,7 @@ async function renderApp(data) {
               const activeContent = contentArea.querySelector(".tab-content.active")
               const target = activeContent ? activeContent.querySelector(`#${CSS.escape(targetId)}`) : null
               if (target) {
-                const top = target.getBoundingClientRect().top + window.scrollY - 24
-                window.scrollTo({ top, behavior: "smooth" })
+                scrollContentToTarget(target, "smooth")
               }
             })
           })

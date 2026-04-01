@@ -7,6 +7,8 @@
   var PAN_STEP = 120;
   var SCALE_EPSILON = 0.001;
   var ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  var boundFigures = new Set();
+  var fullscreenListenersBound = false;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -123,10 +125,9 @@
     container.style.setProperty("--mdsone-mermaid-pan-y", y + "px");
   }
 
-  function lockViewportSize(figure, viewport, svg) {
+  function lockViewportSize(figure, viewport) {
     if (!(figure instanceof HTMLElement)) return;
     if (!(viewport instanceof HTMLElement)) return;
-    if (!(svg instanceof SVGElement)) return;
     if (figure.dataset.mermaidViewportLocked === "1") return;
 
     var width = viewport.clientWidth;
@@ -185,13 +186,11 @@
   function relockViewportSize(figure) {
     if (!(figure instanceof HTMLElement)) return;
     var viewport = getViewport(figure);
-    var svg = figure.querySelector(".mdsone-mermaid__svg > svg");
     if (!(viewport instanceof HTMLElement)) return;
-    if (!(svg instanceof SVGElement)) return;
     viewport.style.width = "";
     viewport.style.height = "";
     figure.dataset.mermaidViewportLocked = "0";
-    lockViewportSize(figure, viewport, svg);
+    lockViewportSize(figure, viewport);
   }
 
   function snapshotInlineViewState(figure) {
@@ -224,30 +223,50 @@
     delete figure.dataset.mermaidInlineSnapshot;
   }
 
+  function syncFullscreenStateForFigure(figure) {
+    if (!(figure instanceof HTMLElement)) return;
+    if (!figure.isConnected) return;
+    updateFullscreenButtonState(figure);
+    if (isFigureFullscreen(figure)) {
+      if (figure.dataset.mermaidInlineSnapshot !== "1") {
+        snapshotInlineViewState(figure);
+      }
+      var viewport = getViewport(figure);
+      if (viewport instanceof HTMLElement) {
+        viewport.style.width = "";
+        viewport.style.height = "";
+        figure.dataset.mermaidViewportLocked = "0";
+      }
+    } else {
+      restoreInlineViewState(figure);
+      relockViewportSize(figure);
+    }
+  }
+
+  function syncAllFullscreenStates() {
+    boundFigures.forEach(function (figure) {
+      if (!(figure instanceof HTMLElement) || !figure.isConnected) {
+        boundFigures.delete(figure);
+        return;
+      }
+      syncFullscreenStateForFigure(figure);
+    });
+  }
+
+  function ensureFullscreenListeners() {
+    if (fullscreenListenersBound) return;
+    fullscreenListenersBound = true;
+    document.addEventListener("fullscreenchange", syncAllFullscreenStates);
+    document.addEventListener("webkitfullscreenchange", syncAllFullscreenStates);
+  }
+
   function bindFullscreenState(figure) {
     if (!(figure instanceof HTMLElement)) return;
     if (figure.dataset.mermaidFullscreenBound === "1") return;
     figure.dataset.mermaidFullscreenBound = "1";
-
-    function syncState() {
-      updateFullscreenButtonState(figure);
-      if (isFigureFullscreen(figure)) {
-        snapshotInlineViewState(figure);
-        var viewport = getViewport(figure);
-        if (viewport instanceof HTMLElement) {
-          viewport.style.width = "";
-          viewport.style.height = "";
-          figure.dataset.mermaidViewportLocked = "0";
-        }
-      } else {
-        restoreInlineViewState(figure);
-        relockViewportSize(figure);
-      }
-    }
-
-    document.addEventListener("fullscreenchange", syncState);
-    document.addEventListener("webkitfullscreenchange", syncState);
-    syncState();
+    boundFigures.add(figure);
+    ensureFullscreenListeners();
+    syncFullscreenStateForFigure(figure);
   }
 
   function toggleFigureFullscreen(figure) {
@@ -427,7 +446,7 @@
     figure.dataset.mermaidZoomBound = "1";
     writeScale(figure, svg, readScale(figure));
     writePan(figure, readPan(figure));
-    lockViewportSize(figure, viewport, svg);
+    lockViewportSize(figure, viewport);
     bindViewportDrag(figure);
     bindViewportWheelZoom(figure);
     bindFullscreenState(figure);
@@ -440,27 +459,9 @@
   }
 
   function decodeMermaidSource(base64) {
-    var b64 = String(base64 || "").trim();
-    if (!b64) return "";
-
-    try {
-      var binary = atob(b64);
-      var bytes = new Uint8Array(binary.length);
-      for (var i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      if (typeof TextDecoder !== "undefined") {
-        return new TextDecoder("utf-8").decode(bytes);
-      }
-
-      var escaped = "";
-      for (var j = 0; j < bytes.length; j += 1) {
-        escaped += "%" + bytes[j].toString(16).padStart(2, "0");
-      }
-      return decodeURIComponent(escaped);
-    } catch (_e) {
-      return "";
-    }
+    var helper = window.__mdsoneMermaidDecodeBase64Utf8;
+    if (typeof helper !== "function") return "";
+    return helper(base64);
   }
 
   function readMermaidSource(figure) {
@@ -540,7 +541,6 @@
 
       if (action === "in") next = current + STEP;
       else if (action === "out") next = current - STEP;
-      else if (action === "reset") next = 1;
       else return;
 
       writeScale(figure, svg, next);
@@ -564,6 +564,9 @@
   });
 
   bindAll(document);
+  window.__mdsoneMermaidZoomInit = function (root) {
+    bindAll(root || document);
+  };
 
   if (typeof MutationObserver !== "undefined") {
     var observer = new MutationObserver(function (mutations) {
