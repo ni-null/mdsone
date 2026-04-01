@@ -737,7 +737,7 @@ body {
   padding-bottom: 0;
   border-bottom: 0;
   position: relative;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.01em; 
 }
 
 .tab-content h1::after {
