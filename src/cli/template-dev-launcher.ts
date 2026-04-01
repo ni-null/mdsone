@@ -43,6 +43,12 @@ export async function runTemplateDevLauncher(
 
   const templateSpec = (args.template || "normal").trim() || "normal";
   const inputs = resolveInputsOrDefault(args.inputs ?? []);
+  const configPath = args.configPath
+    ? path.resolve(process.cwd(), args.configPath)
+    : "";
+  if (configPath && !fs.existsSync(configPath)) {
+    throw new CliError(`Cannot find config file: ${configPath}`);
+  }
 
   logger.info(`template-dev mode: ${templateSpec}`);
   const runner = resolveScriptRunner();
@@ -51,6 +57,7 @@ export async function runTemplateDevLauncher(
     "--project-root", packageRoot,
     "--workdir", process.cwd(),
     "--template", templateSpec,
+    ...(configPath ? ["--config", configPath] : []),
     ...inputs.flatMap((input) => ["--input", input]),
   ];
 

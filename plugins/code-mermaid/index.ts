@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import type { CheerioAPI } from "cheerio";
 import type { Config, Plugin, PluginAssets, PluginContext } from "../../src/core/types.js";
+import { buildMermaidControlsHtml } from "./controls.js";
 
 type CodeMermaidPluginConfig = {
   enable?: unknown;
@@ -106,6 +107,10 @@ function normalizeMermaidSource(raw: string): string {
   return raw.replace(/\r\n/g, "\n").trim();
 }
 
+function hasThemeInitOverride(source: string): boolean {
+  return /%%\{\s*init\s*:[\s\S]*?\b(?:theme|themeVariables)\b[\s\S]*?\}%%/i.test(source);
+}
+
 function hasMermaidFence(markdownText: string): boolean {
   return /(?:^|\n)[ \t]*(?:```|~~~)[ \t]*mermaid(?:[ \t].*)?(?:\n|$)/i.test(markdownText);
 }
@@ -140,6 +145,9 @@ function decodeBasicHtmlEntities(value: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, "&");
+}
+function encodeBase64(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64");
 }
 
 function injectSvgStyle(svgWithoutStyle: string, styleText: string): string {
@@ -369,16 +377,35 @@ async function renderMermaidSvg(
   return await task;
 }
 
-function buildMermaidFigure(svg: string, lightStyle: string, darkStyle: string): string {
+async function renderMermaidSvgWithFallback(
+  source: string,
+  runtime: MermaidRuntime,
+  primaryTheme: string,
+  fallbackThemes: string[],
+): Promise<string | null> {
+  const tried = new Set<string>();
+  const candidates = [primaryTheme, ...fallbackThemes]
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+
+  for (const theme of candidates) {
+    if (tried.has(theme)) continue;
+    tried.add(theme);
+    const svg = await renderMermaidSvg(source, theme, runtime);
+    if (svg) return svg;
+  }
+  return null;
+}
+
+function buildMermaidFigure(svg: string, lightStyle: string, darkStyle: string, sourceBase64: string): string {
   return [
-    '<figure class="mdsone-mermaid" data-mermaid-rendered="1" data-mermaid-themed="1">',
+    `<figure class="mdsone-mermaid" data-mermaid-rendered="1" data-mermaid-themed="1" data-mermaid-source-b64="${sourceBase64}">`,
     `  <script type="text/plain" class="mdsone-mermaid-style-light">${lightStyle}</script>`,
     `  <script type="text/plain" class="mdsone-mermaid-style-dark">${darkStyle}</script>`,
-    '  <div class="mdsone-mermaid__controls" role="group" aria-label="Mermaid zoom controls">',
-    '    <button type="button" class="mdsone-mermaid__zoom-btn" data-zoom="out" aria-label="Zoom out" title="Zoom out">-</button>',
-    '    <button type="button" class="mdsone-mermaid__zoom-btn" data-zoom="in" aria-label="Zoom in" title="Zoom in">+</button>',
+    buildMermaidControlsHtml(),
+    '  <div class="mdsone-mermaid__viewport">',
+    `    <div class="mdsone-mermaid__svg">${svg}</div>`,
     "  </div>",
-    `  <div class="mdsone-mermaid__svg">${svg}</div>`,
     "</figure>",
   ].join("\n");
 }
@@ -422,8 +449,18 @@ export const codeMermaidPlugin: Plugin = {
       if (!source) continue;
 
       const [lightSvgRaw, darkSvgRaw] = await Promise.all([
-        renderMermaidSvg(source, themes.light, runtime),
-        renderMermaidSvg(source, themes.dark, runtime),
+        renderMermaidSvgWithFallback(
+          source,
+          runtime,
+          themes.light,
+          [DEFAULT_THEME_LIGHT, "default", "neutral", "base"],
+        ),
+        renderMermaidSvgWithFallback(
+          source,
+          runtime,
+          themes.dark,
+          [DEFAULT_THEME_DARK, "dark", "default", "base"],
+        ),
       ]);
 
       const lightSvg = cleanupSvg(lightSvgRaw ?? "");
@@ -443,8 +480,20 @@ export const codeMermaidPlugin: Plugin = {
 
       const lightStyle = decodeBasicHtmlEntities(lightParts.styleText || darkParts.styleText);
       const darkStyle = decodeBasicHtmlEntities(darkParts.styleText || lightParts.styleText);
+      if (
+        lightStyle
+        && darkStyle
+        && lightStyle === darkStyle
+        && themes.light !== themes.dark
+        && !hasThemeInitOverride(source)
+      ) {
+        console.warn(
+          `[WARN] Plugin "code-mermaid" light/dark styles are identical (light=${themes.light}, dark=${themes.dark}).`,
+        );
+      }
       const mergedSvg = injectSvgStyle(lightParts.svgWithoutStyle, lightStyle);
-      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyle, darkStyle));
+      const sourceBase64 = encodeBase64(source);
+      pre.replaceWith(buildMermaidFigure(mergedSvg, lightStyle, darkStyle, sourceBase64));
     }
   },
 

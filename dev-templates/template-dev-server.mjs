@@ -18,11 +18,49 @@ function trySpawnSync(command, args, options) {
   }
 }
 
+const DEV_PLUGIN_TOGGLES = [
+  { key: "code-mermaid", label: "Mermaid", env: "CODE_MERMAID" },
+  { key: "code-highlight", label: "Code Highlight", env: "CODE_HIGHLIGHT" },
+  { key: "katex", label: "KaTeX", env: "KATEX" },
+  { key: "code-copy", label: "Code Copy", env: "CODE_COPY" },
+  { key: "code-line-number", label: "Line Number", env: "CODE_LINE_NUMBER" },
+  { key: "minify", label: "Minify", env: "MINIFY" },
+  { key: "image", label: "Image Embed", env: "IMG_EMBED" },
+];
+
+function createDisabledPluginState() {
+  const out = {};
+  for (const item of DEV_PLUGIN_TOGGLES) out[item.key] = false;
+  return out;
+}
+
+function sanitizeDisabledPluginState(input) {
+  const next = createDisabledPluginState();
+  if (!input || typeof input !== "object") return next;
+  for (const item of DEV_PLUGIN_TOGGLES) {
+    if (Object.prototype.hasOwnProperty.call(input, item.key)) {
+      next[item.key] = !!input[item.key];
+    }
+  }
+  return next;
+}
+
+function buildPluginEnvOverrides(disabledPlugins) {
+  const env = {};
+  for (const item of DEV_PLUGIN_TOGGLES) {
+    if (disabledPlugins && disabledPlugins[item.key]) {
+      env[item.env] = "off";
+    }
+  }
+  return env;
+}
+
 function parseArgv(argv) {
   const out = {
     projectRoot: "",
     workdir: "",
     template: "normal",
+    configPath: "",
     inputs: [],
   };
   for (let i = 0; i < argv.length; i++) {
@@ -40,6 +78,11 @@ function parseArgv(argv) {
     }
     if (key === "--template" && next) {
       out.template = next;
+      i++;
+      continue;
+    }
+    if (key === "--config" && next) {
+      out.configPath = next;
       i++;
       continue;
     }
@@ -79,7 +122,7 @@ function ensureFileExists(filePath, message) {
   }
 }
 
-function buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile }) {
+function buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile, configPath, disabledPlugins }) {
   const tsxCliPath = path.join(projectRoot, "node_modules", "tsx", "dist", "cli.mjs");
   const cliEntryPath = path.join(projectRoot, "src", "cli", "main.ts");
   ensureFileExists(
@@ -95,6 +138,7 @@ function buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile }) {
     outputFile,
     "--template",
     templateSpec,
+    ...(configPath ? ["--config", configPath] : []),
   ];
 
   const currentExe = String(process.execPath || "");
@@ -112,7 +156,7 @@ function buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile }) {
         [tsxCliPath, cliEntryPath, ...buildArgsTail],
         {
           cwd: workdir,
-          env: process.env,
+          env: { ...process.env, ...buildPluginEnvOverrides(disabledPlugins) },
           encoding: "utf8",
         },
       );
@@ -130,7 +174,7 @@ function buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile }) {
       ["run", cliEntryPath, ...buildArgsTail],
       {
         cwd: workdir,
-        env: process.env,
+        env: { ...process.env, ...buildPluginEnvOverrides(disabledPlugins) },
         encoding: "utf8",
       },
     );
@@ -152,10 +196,24 @@ function escapeHtml(input) {
 
 const RELOAD_SNIPPET = `<script id="mdsone-template-dev-reload">(function(){if(window.__mdsoneTemplateDevReload){return;}window.__mdsoneTemplateDevReload=true;var es=new EventSource('/__mdsone_dev/events');es.addEventListener('reload',function(){location.reload();});es.addEventListener('build-error',function(e){console.error('[template-dev] build-error',e.data||'');});})();</script>`;
 
-function injectReloadScript(html) {
-  if (html.includes("id=\"mdsone-template-dev-reload\"")) return html;
-  if (html.includes("</body>")) return html.replace("</body>", `${RELOAD_SNIPPET}\n</body>`);
-  return `${html}\n${RELOAD_SNIPPET}`;
+function buildControlsSnippet() {
+  const pluginsJson = JSON.stringify(DEV_PLUGIN_TOGGLES).replace(/</g, "\\u003C");
+  return `<script id="mdsone-template-dev-controls">(function(){if(window.__mdsoneTemplateDevControls){return;}window.__mdsoneTemplateDevControls=true;var endpoint='/__mdsone_dev/plugin-state';var styleId='mdsone-template-dev-controls-style';var panelId='mdsone-template-dev-controls-panel';function ensureStyle(){if(document.getElementById(styleId))return;var style=document.createElement('style');style.id=styleId;style.textContent='.mdsone-dev-controls{position:fixed;left:12px;bottom:12px;z-index:2147483647;background:rgba(20,22,28,.92);color:#e8edf5;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px 12px;min-width:220px;backdrop-filter:blur(4px);font:12px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}.mdsone-dev-controls__title{font-weight:700;margin:0 0 8px}.mdsone-dev-controls__row{display:flex;align-items:center;gap:8px;margin:4px 0}.mdsone-dev-controls__row input{margin:0}.mdsone-dev-controls__hint{opacity:.75;margin-top:8px}';document.head.appendChild(style);}function ensurePanel(){var panel=document.getElementById(panelId);if(panel)return panel;panel=document.createElement('div');panel.id=panelId;panel.className='mdsone-dev-controls';panel.innerHTML='<div class="mdsone-dev-controls__title">Template Dev Plugins</div><div class="mdsone-dev-controls__list"></div><div class="mdsone-dev-controls__hint">Unchecked = disabled (auto rebuild)</div>';document.body.appendChild(panel);return panel;}function readState(){return fetch(endpoint,{cache:'no-store'}).then(function(res){return res.json();});}function updateState(plugin,enabled){return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plugin:plugin,enabled:enabled})}).then(function(res){return res.json();});}function render(state){var panel=ensurePanel();var list=panel.querySelector('.mdsone-dev-controls__list');if(!list)return;var disabled=(state&&state.disabled&&typeof state.disabled==='object')?state.disabled:{};var plugins=${pluginsJson};list.innerHTML='';plugins.forEach(function(item){var row=document.createElement('label');row.className='mdsone-dev-controls__row';var cb=document.createElement('input');cb.type='checkbox';cb.checked=!disabled[item.key];cb.addEventListener('change',function(){cb.disabled=true;updateState(item.key,cb.checked).then(function(next){var nextDisabled=(next&&next.disabled&&typeof next.disabled==='object')?next.disabled:{};cb.checked=!nextDisabled[item.key];}).catch(function(){cb.checked=!cb.checked;}).finally(function(){cb.disabled=false;});});var text=document.createElement('span');text.textContent=item.label;row.appendChild(cb);row.appendChild(text);list.appendChild(row);});}function init(){ensureStyle();readState().then(render).catch(function(){ensurePanel();});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init,{once:true});}else{init();}})();</script>`;
+}
+
+function injectDevScripts(html) {
+  let next = html;
+  if (!next.includes('id="mdsone-template-dev-reload"')) {
+    if (next.includes("</body>")) next = next.replace("</body>", `${RELOAD_SNIPPET}\n</body>`);
+    else next = `${next}\n${RELOAD_SNIPPET}`;
+  }
+
+  const controls = buildControlsSnippet();
+  if (!next.includes('id="mdsone-template-dev-controls"')) {
+    if (next.includes("</body>")) next = next.replace("</body>", `${controls}\n</body>`);
+    else next = `${next}\n${controls}`;
+  }
+  return next;
 }
 
 function createErrorPage(message) {
@@ -166,6 +224,34 @@ function createErrorPage(message) {
 function writeSseEvent(res, eventName, data) {
   res.write(`event: ${eventName}\n`);
   res.write(`data: ${String(data ?? "")}\n\n`);
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      const raw = Buffer.concat(chunks).toString("utf8").trim();
+      if (!raw) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function writeJson(res, statusCode, payload) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+  });
+  res.end(JSON.stringify(payload));
 }
 
 function collectWatchTargets(templateDir, inputs) {
@@ -182,6 +268,10 @@ function main() {
   const projectRoot = path.resolve(parsed.projectRoot || process.cwd());
   const workdir = path.resolve(parsed.workdir || process.cwd());
   const templateSpec = String(parsed.template || "normal");
+  const configPath = parsed.configPath ? path.resolve(parsed.configPath) : "";
+  if (configPath && !fs.existsSync(configPath)) {
+    throw new Error(`Cannot find config file: ${configPath}`);
+  }
   let inputs;
   if (parsed.inputs.length > 0) {
     inputs = parsed.inputs.map((x) => path.resolve(x));
@@ -212,6 +302,7 @@ function main() {
   let debounceTimer = null;
   let lastBuildError = "template-dev build has not run yet.";
   let hasBuilt = false;
+  const disabledPlugins = createDisabledPluginState();
 
   function broadcast(eventName, data) {
     for (const client of sseClients) {
@@ -220,7 +311,7 @@ function main() {
   }
 
   function runBuild(reason) {
-    const result = buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile });
+    const result = buildOnce({ projectRoot, workdir, templateSpec, inputs, outputFile, configPath, disabledPlugins });
     if (result.status === 0) {
       const previousBuilt = hasBuilt;
       hasBuilt = true;
@@ -268,6 +359,38 @@ function main() {
       return;
     }
 
+    if (url.startsWith("/__mdsone_dev/plugin-state")) {
+      if (req.method === "GET") {
+        writeJson(res, 200, { disabled: disabledPlugins, plugins: DEV_PLUGIN_TOGGLES });
+        return;
+      }
+
+      if (req.method !== "POST") {
+        writeJson(res, 405, { error: "Method Not Allowed" });
+        return;
+      }
+
+      readJsonBody(req).then((body) => {
+        if (body && typeof body === "object" && typeof body.plugin === "string") {
+          const key = body.plugin.trim();
+          if (Object.prototype.hasOwnProperty.call(disabledPlugins, key)) {
+            disabledPlugins[key] = body.enabled === true ? false : true;
+          }
+        } else if (body && typeof body === "object" && body.disabled && typeof body.disabled === "object") {
+          const next = sanitizeDisabledPluginState(body.disabled);
+          for (const key of Object.keys(disabledPlugins)) {
+            disabledPlugins[key] = !!next[key];
+          }
+        }
+
+        scheduleBuild("plugin-state-changed");
+        writeJson(res, 200, { disabled: disabledPlugins, plugins: DEV_PLUGIN_TOGGLES });
+      }).catch((error) => {
+        writeJson(res, 400, { error: String(error?.message || error || "Invalid JSON") });
+      });
+      return;
+    }
+
     if (url === "/" || url.startsWith("/template.html")) {
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
@@ -275,7 +398,7 @@ function main() {
       });
       if (fs.existsSync(outputFile)) {
         const html = fs.readFileSync(outputFile, "utf8");
-        res.end(injectReloadScript(html));
+        res.end(injectDevScripts(html));
         return;
       }
       res.end(createErrorPage(lastBuildError));

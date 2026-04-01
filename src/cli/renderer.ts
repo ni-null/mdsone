@@ -3,6 +3,8 @@
 // Isolated presentation layer for easy rollback/replacement.
 // ============================================================
 
+import { isColorOutputEnabled } from "./terminal.js";
+
 const ANSI = {
   reset: "\x1b[0m",
   cyan: "\x1b[36m",
@@ -24,9 +26,7 @@ function isFalsy(v: string | undefined): boolean {
 }
 
 function supportsColor(stream: { isTTY?: boolean }, env: Record<string, string | undefined>): boolean {
-  if (!stream.isTTY) return false;
-  if (env["NO_COLOR"] !== undefined) return false;
-  return true;
+  return isColorOutputEnabled({ env, stdout: stream, stderr: stream });
 }
 
 function supportsUnicode(stream: { isTTY?: boolean }, env: Record<string, string | undefined>): boolean {

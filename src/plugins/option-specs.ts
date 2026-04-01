@@ -179,6 +179,41 @@ export const pluginOptionSpecs: PluginOptionSpec[] = [
     },
   },
   {
+    pluginName: "code-mermaid",
+    cli: [
+      {
+        flags: "--code-mermaid <off>",
+        description: "Disable Mermaid diagram rendering (use --code-mermaid=off)",
+        parser: (raw: string) => {
+          const parsed = parseEnumLike(raw, ["off"] as const);
+          if (parsed !== undefined) return parsed;
+          throw new Error("Invalid value for --code-mermaid. Use off.");
+        },
+      },
+    ],
+    cliToConfig(opts, out) {
+      const raw = opts["codeMermaid"];
+      if (String(raw ?? "").toLowerCase() !== "off") return;
+      const codeMermaid = ensurePluginConfig(out, "code-mermaid");
+      codeMermaid["enable"] = false;
+    },
+    envToConfig(env, out) {
+      const raw = env["CODE_MERMAID"];
+      if (raw === undefined) return;
+
+      let enable = parseBooleanLike(raw);
+      if (enable === undefined) {
+        const mode = parseEnumLike(raw, ["off", "on"] as const);
+        if (mode === undefined) return;
+        enable = mode === "on";
+      }
+
+      const codeMermaid = ensurePluginConfig(out, "code-mermaid");
+      codeMermaid["enable"] = enable;
+    },
+  },
+
+  {
     pluginName: "code-copy",
     cli: [
       {

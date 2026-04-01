@@ -10,8 +10,29 @@
       .replace(/&amp;/g, "&");
   }
 
+  function detectThemeFromNode(node) {
+    if (!node || !node.getAttribute) return null;
+    var dataTheme = String(node.getAttribute("data-theme") || "").toLowerCase();
+    if (dataTheme === "dark") return "dark";
+    if (dataTheme === "light") return "light";
+
+    var className = String(node.className || "").toLowerCase();
+    if (/\bdark\b/.test(className)) return "dark";
+    if (/\blight\b/.test(className)) return "light";
+    return null;
+  }
+
   function getTheme() {
-    return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    var htmlTheme = detectThemeFromNode(document.documentElement);
+    if (htmlTheme) return htmlTheme;
+
+    var bodyTheme = detectThemeFromNode(document.body);
+    if (bodyTheme) return bodyTheme;
+
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+    return "light";
   }
 
   function applyFigureTheme(figure, theme) {
@@ -49,7 +70,17 @@
         }
       }
     });
-    htmlObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    htmlObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme", "class"],
+    });
+
+    if (document.body) {
+      htmlObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["data-theme", "class"],
+      });
+    }
 
     const bodyObserver = new MutationObserver(function (mutations) {
       for (const mutation of mutations) {
@@ -66,6 +97,19 @@
     });
     if (document.body) {
       bodyObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    if (window.matchMedia) {
+      var media = window.matchMedia("(prefers-color-scheme: dark)");
+      if (media && typeof media.addEventListener === "function") {
+        media.addEventListener("change", function () {
+          applyTheme(document);
+        });
+      } else if (media && typeof media.addListener === "function") {
+        media.addListener(function () {
+          applyTheme(document);
+        });
+      }
     }
   }
 

@@ -74,8 +74,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0",
     "@iarna/toml": "^3.0.0",
+    "@modelcontextprotocol/sdk": "^1.17.0",
     "@shikijs/markdown-exit": "^4.0.2",
     "cheerio": "^1.1.2",
     "commander": "^12.0.0",
@@ -88,7 +88,6 @@
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-katex": "^2.0.3",
     "markdown-it-task-lists": "^2.1.1",
-    "ora": "^8.2.0",
     "sharp": "^0.34.5",
     "shiki": "^3.14.0",
     "zod": "^3.24.1"

@@ -921,7 +921,6 @@ async function runBatchMode(
   }
 }
 export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promise<void> {
-  progressStart(logger, "Initializing CLI");
   const args = parseArgs(argv);
   const packageRoot = resolvePackageRoot();
 
@@ -936,21 +935,16 @@ export async function runCli(logger: CliPipelineLogger, argv?: string[]): Promis
     ? await loadConfigFile(path.resolve(process.cwd(), args.configPath))
     : {};
 
-  progressUpdate(logger, "Loading config");
   const config = buildConfig(toml, cliOverride);
   normalizeConfigPaths(config, packageRoot);
 
-  progressUpdate(logger, "Resolving inputs");
   const resolvedInputs = classifyInputs(args, resolveInputs(args, config), config);
   const outputPlan = resolveOutputPlan(args, config, resolvedInputs);
 
   const pluginManager = new PluginManager();
-  progressUpdate(logger, "Preflight validation");
   runPreflightValidation(config, pluginManager, logger);
 
-  progressUpdate(logger, "Loading template");
   const templateContext = await resolveTemplateContext(config, logger, packageRoot);
-  progressUpdate(logger, "Loading locale name map");
   const localeNames = await loadLocaleNamesConfig(config.locales_dir);
   const runtime = createRuntimeContext(
     config,

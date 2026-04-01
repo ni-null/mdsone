@@ -32,74 +32,17 @@ function readPkgVersion(): string {
 const VERSION = readPkgVersion();
 const ON_OFF_PATTERN = /^(on|off)$/i;
 
-function findI18nModeSpaceArg(args: string[]): string | null {
-  const localeLike = /^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*$/;
+function findInvalidSpaceArg(
+  args: string[],
+  flags: string[],
+  validator: (value: string) => boolean,
+): string | null {
   for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--i18n-mode" && args[i] !== "-i") continue;
+    if (!flags.includes(args[i])) continue;
     const next = args[i + 1];
     if (!next) continue;
     if (next.startsWith("-")) continue;
-    if (localeLike.test(next)) {
-      return next;
-    }
-  }
-  return null;
-}
-
-function findCodeCopySpaceArg(args: string[]): string | null {
-  const modeLike = /^(off|line|cmd)$/i;
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--code-copy") continue;
-    const next = args[i + 1];
-    if (!next) continue;
-    if (next.startsWith("-")) continue;
-    if (modeLike.test(next)) {
-      return next;
-    }
-  }
-  return null;
-}
-
-function findCodeHighlightSpaceArg(args: string[]): string | null {
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--code-highlight") continue;
-    const next = args[i + 1];
-    if (!next) continue;
-    if (next.startsWith("-")) continue;
-    if (/^off$/i.test(next)) return next;
-  }
-  return null;
-}
-
-function findCodeLineNumberSpaceArg(args: string[]): string | null {
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--code-line-number") continue;
-    const next = args[i + 1];
-    if (!next) continue;
-    if (next.startsWith("-")) continue;
-    if (/^off$/i.test(next)) return next;
-  }
-  return null;
-}
-
-function findImgEmbedSpaceArg(args: string[]): string | null {
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] !== "--img-embed") continue;
-    const next = args[i + 1];
-    if (!next) continue;
-    if (next.startsWith("-")) continue;
-    if (/^(off|base64)$/i.test(next)) return next;
-  }
-  return null;
-}
-
-function findMarkdownModeSpaceArg(args: string[], flag: string): string | null {
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] !== flag) continue;
-    const next = args[i + 1];
-    if (!next) continue;
-    if (next.startsWith("-")) continue;
-    if (ON_OFF_PATTERN.test(next)) return next;
+    if (validator(next)) return next;
   }
   return null;
 }
@@ -234,63 +177,99 @@ export function parseArgs(argv?: string[]): CliArgs {
   });
 
   const parseInput = argv ?? process.argv;
-  const badLocale = findI18nModeSpaceArg(parseInput);
+  const badLocale = findInvalidSpaceArg(
+    parseInput,
+    ["--i18n-mode", "-i"],
+    (value) => /^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*$/.test(value),
+  );
   if (badLocale) {
     program.error(
       `Invalid i18n mode syntax. Use '--i18n-mode=${badLocale}' (or '-i=${badLocale}') instead.`,
       { exitCode: 1 },
     );
   }
-  const badCopyMode = findCodeCopySpaceArg(parseInput);
+  const badCopyMode = findInvalidSpaceArg(
+    parseInput,
+    ["--code-copy"],
+    (value) => /^(off|line|cmd)$/i.test(value),
+  );
   if (badCopyMode) {
     program.error(
       `Invalid code copy syntax: '--code-copy ${badCopyMode}'. Use '--code-copy=${badCopyMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badHighlightMode = findCodeHighlightSpaceArg(parseInput);
+  const badHighlightMode = findInvalidSpaceArg(
+    parseInput,
+    ["--code-highlight"],
+    (value) => /^off$/i.test(value),
+  );
   if (badHighlightMode) {
     program.error(
       `Invalid code highlight syntax: '--code-highlight ${badHighlightMode}'. Use '--code-highlight=${badHighlightMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badLineNumberMode = findCodeLineNumberSpaceArg(parseInput);
+  const badLineNumberMode = findInvalidSpaceArg(
+    parseInput,
+    ["--code-line-number"],
+    (value) => /^off$/i.test(value),
+  );
   if (badLineNumberMode) {
     program.error(
       `Invalid line number syntax: '--code-line-number ${badLineNumberMode}'. Use '--code-line-number=${badLineNumberMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badImgEmbedMode = findImgEmbedSpaceArg(parseInput);
+  const badImgEmbedMode = findInvalidSpaceArg(
+    parseInput,
+    ["--img-embed"],
+    (value) => /^(off|base64)$/i.test(value),
+  );
   if (badImgEmbedMode) {
     program.error(
       `Invalid image embed syntax: '--img-embed ${badImgEmbedMode}'. Use '--img-embed=${badImgEmbedMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badMdLinkifyMode = findMarkdownModeSpaceArg(parseInput, "--md-linkify");
+  const badMdLinkifyMode = findInvalidSpaceArg(
+    parseInput,
+    ["--md-linkify"],
+    (value) => ON_OFF_PATTERN.test(value),
+  );
   if (badMdLinkifyMode) {
     program.error(
       `Invalid markdown syntax: '--md-linkify ${badMdLinkifyMode}'. Use '--md-linkify=${badMdLinkifyMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badMdTypographerMode = findMarkdownModeSpaceArg(parseInput, "--md-typographer");
+  const badMdTypographerMode = findInvalidSpaceArg(
+    parseInput,
+    ["--md-typographer"],
+    (value) => ON_OFF_PATTERN.test(value),
+  );
   if (badMdTypographerMode) {
     program.error(
       `Invalid markdown syntax: '--md-typographer ${badMdTypographerMode}'. Use '--md-typographer=${badMdTypographerMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badMdBreaksMode = findMarkdownModeSpaceArg(parseInput, "--md-breaks");
+  const badMdBreaksMode = findInvalidSpaceArg(
+    parseInput,
+    ["--md-breaks"],
+    (value) => ON_OFF_PATTERN.test(value),
+  );
   if (badMdBreaksMode) {
     program.error(
       `Invalid markdown syntax: '--md-breaks ${badMdBreaksMode}'. Use '--md-breaks=${badMdBreaksMode}' instead.`,
       { exitCode: 1 },
     );
   }
-  const badMdXhtmlOutMode = findMarkdownModeSpaceArg(parseInput, "--md-xhtml-out");
+  const badMdXhtmlOutMode = findInvalidSpaceArg(
+    parseInput,
+    ["--md-xhtml-out"],
+    (value) => ON_OFF_PATTERN.test(value),
+  );
   if (badMdXhtmlOutMode) {
     program.error(
       `Invalid markdown syntax: '--md-xhtml-out ${badMdXhtmlOutMode}'. Use '--md-xhtml-out=${badMdXhtmlOutMode}' instead.`,
