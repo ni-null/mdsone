@@ -31,6 +31,7 @@ function escapeJsonForHtmlScript(json: string): string {
 function buildCoreLibCss(libCss?: string): string {
   const coreBaseCssTag = [
     "    <style>/* core/base.css */",
+    ":where(.tab-content) :where(img),",
     ".mdsone-embedded-image {",
     "  max-width: 100%;",
     "  height: auto;",
