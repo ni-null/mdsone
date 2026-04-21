@@ -28,6 +28,19 @@ function escapeJsonForHtmlScript(json: string): string {
     .replace(/\u2029/g, "\\u2029");
 }
 
+function buildCoreLibCss(libCss?: string): string {
+  const coreBaseCssTag = [
+    "    <style>/* core/base.css */",
+    ".mdsone-embedded-image {",
+    "  max-width: 100%;",
+    "  height: auto;",
+    "}",
+    "    </style>",
+  ].join("\n");
+  if (!libCss || !libCss.trim()) return coreBaseCssTag;
+  return `${coreBaseCssTag}\n${libCss}`;
+}
+
 // ── DocItem 組裝 ──────────────────────────────────────────
 
 function buildDocItems(docs: Record<string, string>): DocItem[] {
@@ -155,7 +168,7 @@ export function buildHtml(params: BuildParams): string {
     TITLE: config.site_title,
     LANG: htmlLang,
     SVG_SPRITE: templateData.assets_svg_sprite ?? "",
-    LIB_CSS: params.libCss ?? "",
+    LIB_CSS: buildCoreLibCss(params.libCss),
     LIB_JS: params.libJs ?? "",
     EXTRA_CSS: cssTagsHtml,
     EXTRA_JS: jsTagsHtml,

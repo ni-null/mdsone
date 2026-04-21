@@ -16,6 +16,7 @@ import { fetchRemoteImage, MIME_MAP } from "./fetch-image.js";
 import { processImageBuffer } from "./process-image.js";
 
 type ImageEmbedMode = "off" | "base64";
+const EMBEDDED_IMAGE_CLASS = "mdsone-embedded-image";
 type ImagePluginConfig = {
     embed?: unknown;
     base64_embed?: unknown;
@@ -60,6 +61,13 @@ async function embedImagesInDom(
         const processed = await processImageBuffer(imageData.buffer, imageData.mime, opts);
         const dataUrl = `data:${processed.mime};base64,${processed.buffer.toString("base64")}`;
         imgEl.attr("src", dataUrl);
+        const classNames = String(imgEl.attr("class") ?? "")
+            .split(/\s+/)
+            .filter(Boolean);
+        if (!classNames.includes(EMBEDDED_IMAGE_CLASS)) {
+            classNames.push(EMBEDDED_IMAGE_CLASS);
+            imgEl.attr("class", classNames.join(" "));
+        }
     }
 }
 
